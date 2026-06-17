@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: laravel-storage-pvc
+  namespace: abaad
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  # K3s يستخدم local-path بشكل افتراضي
+  # غيّره لو عندك storage class مختلف
+  storageClassName: local-path

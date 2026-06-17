@@ -1,0 +1,2272 @@
+@extends('layouts.front-end.app')
+
+@section('title', $estate['title'])
+
+@push('css_or_js')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+<style>
+    :root{
+        --bg: #0b1020;
+        --surface: rgba(255,255,255,.08);
+        --surface-2: rgba(255,255,255,.12);
+        --card: #ffffff;
+        --text: #101828;
+        --muted: #667085;
+        --line: #e4e7ec;
+        --primary: #0f5bd7;
+        --primary-2: #114b89;
+        --accent: #19b36b;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+        --shadow-lg: 0 24px 60px rgba(16,24,40,.18);
+        --shadow-md: 0 12px 30px rgba(16,24,40,.10);
+        --shadow-sm: 0 8px 20px rgba(16,24,40,.08);
+    }
+
+    body{
+        background:
+            radial-gradient(circle at top right, rgba(17,75,137,.15), transparent 25%),
+            radial-gradient(circle at top left, rgba(15,91,215,.15), transparent 25%),
+            #f4f7fb;
+        color: var(--text);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .estate-shell{
+        padding: 28px 0 90px;
+    }
+
+    .glass-hero{
+        position: relative;
+        overflow: hidden;
+        border-radius: 32px;
+        background:
+            linear-gradient(135deg, rgba(10,16,32,.92), rgba(17,75,137,.85));
+        box-shadow: var(--shadow-lg);
+        color: #fff;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .glass-hero::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+            radial-gradient(circle at 80% 10%, rgba(255,255,255,.16), transparent 18%),
+            radial-gradient(circle at 10% 90%, rgba(255,255,255,.10), transparent 20%);
+        pointer-events:none;
+    }
+
+    .hero-badge{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:10px 14px;
+        border-radius:999px;
+        background: rgba(255,255,255,.12);
+        backdrop-filter: blur(10px);
+        font-size:.9rem;
+        font-weight:700;
+        border: 1px solid rgba(255,255,255,.12);
+        max-width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .hero-title{
+        font-size: clamp(1.6rem, 3vw, 2.5rem);
+        font-weight: 800;
+        margin: 16px 0 10px;
+        line-height: 1.4;
+        word-break: break-word;
+    }
+
+    .hero-subtitle{
+        color: rgba(255,255,255,.82);
+        font-size: 1rem;
+        line-height: 1.9;
+        margin-bottom: 18px;
+    }
+
+    .hero-stats{
+        display:grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap:12px;
+        margin-top: 18px;
+    }
+
+    .hero-stat{
+        background: rgba(255,255,255,.09);
+        border:1px solid rgba(255,255,255,.12);
+        border-radius: 18px;
+        padding: 14px;
+        backdrop-filter: blur(8px);
+        min-width: 0;
+    }
+
+    .hero-stat .label{
+        display:block;
+        font-size:.82rem;
+        color: rgba(255,255,255,.72);
+        margin-bottom:6px;
+    }
+
+    .hero-stat .value{
+        font-size:1.02rem;
+        font-weight:800;
+        color:#fff;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .price-value{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        flex-wrap:wrap;
+    }
+
+    .price-value img{
+        width:16px;
+        height:16px;
+        flex-shrink: 0;
+    }
+
+    .estate-grid{
+        display:grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(320px, .75fr);
+        gap: 24px;
+        align-items:start;
+    }
+
+    .cardx{
+        background: var(--card);
+        border:1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        overflow:hidden;
+    }
+
+    .cardx-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:20px 22px 0;
+    }
+
+    .cardx-title{
+        font-size:1.08rem;
+        font-weight:800;
+        margin:0;
+        color:#0f172a;
+    }
+
+    .cardx-subtitle{
+        color:var(--muted);
+        font-size:.92rem;
+        margin-top:4px;
+    }
+
+    .media-layout{
+        padding: 20px 22px 22px;
+    }
+
+    .media-tabs{
+        display:flex;
+        flex-wrap:wrap;
+        gap:10px;
+        margin-bottom:16px;
+    }
+
+    .media-tab{
+        border:none;
+        background:#eef4ff;
+        color:#1d4ed8;
+        padding:12px 16px;
+        border-radius: 999px;
+        font-weight:800;
+        font-size:.92rem;
+        transition:.2s ease;
+    }
+
+    .media-tab.active,
+    .media-tab:hover{
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color:#fff;
+        box-shadow: 0 10px 24px rgba(15,91,215,.22);
+    }
+
+    .gallery-stage{
+        display:grid;
+        grid-template-columns: 1fr 126px;
+        gap:14px;
+        align-items:stretch;
+    }
+
+    .main-preview{
+        position:relative;
+        min-height: 560px;
+        border-radius: 24px;
+        overflow:hidden;
+        background: #0f172a;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .main-preview img,
+    .main-preview video,
+    .main-preview iframe{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+        border:none;
+    }
+
+    .preview-overlay{
+        position:absolute;
+        inset:auto 0 0 0;
+        padding:20px;
+        background: linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,0));
+        color:#fff;
+        pointer-events:none;
+    }
+
+    .preview-overlay .title{
+        font-size:1.08rem;
+        font-weight:800;
+        margin-bottom:4px;
+    }
+
+    .preview-overlay .meta{
+        color:rgba(255,255,255,.8);
+        font-size:.9rem;
+    }
+
+    .media-rail{
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+        max-height:560px;
+        overflow:auto;
+        padding-inline-end:2px;
+    }
+
+    .rail-item{
+        position:relative;
+        height:96px;
+        border:none;
+        border-radius: 18px;
+        overflow:hidden;
+        background:#e5e7eb;
+        cursor:pointer;
+        transition:.2s ease;
+        outline:none;
+        border:2px solid transparent;
+        flex-shrink: 0;
+    }
+
+    .rail-item img,
+    .rail-item video{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+    }
+
+    .rail-item::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        background: linear-gradient(to top, rgba(0,0,0,.22), transparent);
+    }
+
+    .rail-item.active{
+        border-color: var(--primary);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(15,91,215,.18);
+    }
+
+    .rail-badge{
+        position:absolute;
+        bottom:8px;
+        right:8px;
+        z-index:2;
+        background: rgba(255,255,255,.92);
+        color:#111827;
+        border-radius:999px;
+        padding:4px 8px;
+        font-size:.74rem;
+        font-weight:800;
+    }
+
+    .floating-actions{
+        position:absolute;
+        top:18px;
+        left:18px;
+        z-index:3;
+        display:flex;
+        gap:10px;
+        flex-wrap: wrap;
+        max-width: calc(100% - 36px);
+    }
+
+    .fab-btn{
+        width:48px;
+        height:48px;
+        border:none;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background: rgba(255,255,255,.16);
+        color:#fff;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.15);
+        transition:.2s ease;
+        flex-shrink: 0;
+    }
+
+    .fab-btn:hover{
+        transform: translateY(-2px);
+        background: rgba(255,255,255,.24);
+        color:#fff;
+    }
+
+    .thumb-counter{
+        position:absolute;
+        top:18px;
+        right:18px;
+        z-index:3;
+        background: rgba(0,0,0,.44);
+        color:#fff;
+        border-radius:999px;
+        padding:10px 14px;
+        font-weight:800;
+        font-size:.88rem;
+        backdrop-filter: blur(8px);
+        max-width: calc(100% - 36px);
+    }
+
+    .section-body{
+        padding: 20px 22px 22px;
+    }
+
+    .quick-actions{
+        display:grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap:12px;
+    }
+
+    .quick-action{
+        border:none;
+        border-radius: 18px;
+        padding:16px 14px;
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+        border:1px solid #dbe7ff;
+        text-align:center;
+        font-weight:800;
+        color:#0f172a;
+        box-shadow: 0 8px 22px rgba(2,132,199,.06);
+        transition:.2s ease;
+    }
+
+    .quick-action i{
+        display:block;
+        font-size:1.2rem;
+        margin-bottom:10px;
+        color:var(--primary);
+    }
+
+    .quick-action:hover{
+        transform:translateY(-3px);
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color:#fff;
+    }
+
+    .quick-action:hover i{
+        color:#fff;
+    }
+
+.chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 16px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffffff, #f1f5f9);
+    border:1px solid #e2e8f0;
+    font-size:.9rem;
+    font-weight:700;
+    color:#0f172a;
+    box-shadow: 0 6px 16px rgba(15,23,42,.06);
+    transition:.2s ease;
+}
+
+.chip i{
+    font-size:.9rem;
+    color: var(--primary);
+}
+
+.chip:hover{
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color:#fff;
+}
+
+.chip:hover i{
+    color:#fff;
+}
+
+    .detail-grid{
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap:14px;
+    }
+
+    .detail-item{
+        background: linear-gradient(180deg, #ffffff, #fafcff);
+        border:1px solid var(--line);
+        border-radius: 18px;
+        padding:16px;
+        min-height:92px;
+        min-width: 0;
+    }
+
+    .detail-item .k{
+        display:block;
+        color: var(--muted);
+        font-size:.86rem;
+        margin-bottom:8px;
+    }
+
+    .detail-item .v{
+        font-weight:800;
+        font-size:1rem;
+        color:#111827;
+        line-height:1.7;
+        word-break: break-word;
+    }
+
+    .description-box{
+        background: linear-gradient(180deg, #ffffff, #fafcff);
+        border:1px solid var(--line);
+        border-radius: 20px;
+        padding:18px;
+        line-height:2;
+        color:#334155;
+        white-space:pre-line;
+        word-break: break-word;
+    }
+
+    .map-shell{
+        border-radius: 24px;
+        overflow:hidden;
+        border:1px solid var(--line);
+        background:#fff;
+    }
+
+    .nearby-toolbar{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        padding: 0 22px 18px;
+    }
+
+    .nearby-btn{
+        border:none;
+        border-radius:999px;
+        background:#eef4ff;
+        color:#1d4ed8;
+        padding:12px 16px;
+        font-weight:800;
+        transition:.2s ease;
+    }
+
+    .nearby-btn.active,
+    .nearby-btn:hover{
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color:#fff;
+        box-shadow: 0 10px 24px rgba(15,91,215,.22);
+    }
+
+    #map{
+        height: 430px;
+        width:100%;
+    }
+
+    .sticky-side{
+        position: sticky;
+        top: 18px;
+        display:grid;
+        gap:20px;
+    }
+
+    .seller-card{
+        background:
+            radial-gradient(circle at top left, rgba(15,91,215,.10), transparent 22%),
+            #fff;
+        border:1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        overflow:hidden;
+    }
+
+    .seller-cover{
+        height:88px;
+        background: linear-gradient(135deg, #0f5bd7, #114b89);
+    }
+
+    .seller-body{
+        padding:0 20px 22px;
+        margin-top:-36px;
+    }
+
+    .seller-avatar{
+        width:84px;
+        height:84px;
+        border-radius:50%;
+        object-fit:cover;
+        border:4px solid #fff;
+        box-shadow: var(--shadow-sm);
+        background:#fff;
+    }
+
+    .seller-name{
+        font-size:1.08rem;
+        font-weight:800;
+        margin:14px 0 4px;
+        word-break: break-word;
+    }
+
+    .seller-phone{
+        color:var(--muted);
+        margin-bottom:16px;
+        word-break: break-word;
+    }
+
+    .seller-metrics{
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap:12px;
+        margin-bottom:16px;
+    }
+
+    .seller-metric{
+        background:#f8fafc;
+        border:1px solid var(--line);
+        border-radius:18px;
+        padding:14px 12px;
+        text-align:center;
+        min-width: 0;
+    }
+
+    .seller-metric .k{
+        display:block;
+        color:var(--muted);
+        font-size:.8rem;
+        margin-bottom:6px;
+    }
+
+    .seller-metric .v{
+        font-weight:800;
+        color: var(--primary);
+        word-break: break-word;
+    }
+
+    .cta-stack{
+        display:grid;
+        gap:10px;
+    }
+
+    .cta-primary,
+    .cta-secondary{
+        border:none;
+        text-decoration:none;
+        border-radius: 18px;
+        padding:14px 16px;
+        font-weight:800;
+        text-align:center;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:10px;
+        transition:.2s ease;
+    }
+
+    .cta-primary{
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color:#fff;
+        box-shadow: 0 12px 28px rgba(15,91,215,.20);
+    }
+
+    .cta-primary:hover{
+        color:#fff;
+        transform: translateY(-2px);
+    }
+
+    .cta-secondary{
+        background:#fff;
+        color:#0f172a;
+        border:1px solid var(--line);
+    }
+
+    .cta-secondary:hover{
+        background:#f8fafc;
+        color:#0f172a;
+    }
+
+    .social-row{
+        display:flex;
+        justify-content:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:16px;
+    }
+
+    .social-row a{
+        width:42px;
+        height:42px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:50%;
+        background:#f8fafc;
+        border:1px solid var(--line);
+    }
+
+    .social-row img{
+        width:22px;
+        height:22px;
+        object-fit:contain;
+    }
+
+    .side-mini-card{
+        background:#fff;
+        border:1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        padding:18px;
+    }
+
+    .mini-stat{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        padding:14px;
+        border-radius:18px;
+        background:#f8fafc;
+        border:1px solid var(--line);
+    }
+
+    .mini-stat + .mini-stat{
+        margin-top:12px;
+    }
+
+    .mini-stat img{
+        width:24px;
+        height:24px;
+    }
+
+    .offer-card{
+        position:relative;
+        border:1px solid var(--line);
+        border-radius:24px;
+        overflow:hidden;
+        background:#fff;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .offer-card + .offer-card{
+        margin-top:14px;
+    }
+
+    .offer-ribbon{
+        position:absolute;
+        top:14px;
+        right:14px;
+        background: linear-gradient(135deg, #ef4444, #f97316);
+        color:#fff;
+        border-radius:999px;
+        padding:8px 10px;
+        font-size:.78rem;
+        font-weight:800;
+        z-index:2;
+    }
+
+    .offer-inner{
+        display:grid;
+        grid-template-columns: 110px 1fr;
+        gap:14px;
+        padding:14px;
+        align-items:center;
+    }
+
+    .offer-thumb{
+        width:110px;
+        height:110px;
+        border-radius:18px;
+        object-fit:cover;
+        background:#e5e7eb;
+    }
+
+    .offer-name{
+        font-weight:800;
+        margin-bottom:6px;
+        color:#111827;
+        word-break: break-word;
+    }
+
+    .offer-price{
+        font-weight:900;
+        color: var(--primary);
+        margin-bottom:4px;
+        word-break: break-word;
+    }
+
+    .offer-expiry{
+        color:var(--muted);
+        font-size:.88rem;
+        word-break: break-word;
+    }
+
+    .offer-links{
+        display:flex;
+        gap:12px;
+        margin-top:10px;
+    }
+
+    .offer-links a{
+        color:#0f172a;
+        font-size:1.1rem;
+    }
+
+    .custom-modal .modal-content{
+        border:none;
+        border-radius: 28px;
+        overflow:hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .custom-modal .modal-header{
+        background: linear-gradient(135deg, #0f5bd7, #114b89);
+        color:#fff;
+        border:none;
+        padding:16px 20px;
+    }
+
+    .custom-modal .btn-close{
+        filter: invert(1);
+    }
+
+    .fullscreen-gallery{
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap:14px;
+    }
+
+    .fullscreen-gallery img{
+        width:100%;
+        height:240px;
+        object-fit:cover;
+        border-radius:18px;
+    }
+
+    .mobile-bar{
+        position:fixed;
+        bottom:12px;
+        left:12px;
+        right:12px;
+        z-index:999;
+        background: rgba(255,255,255,.9);
+        backdrop-filter: blur(16px);
+        border:1px solid rgba(255,255,255,.7);
+        box-shadow: var(--shadow-lg);
+        border-radius: 24px;
+        padding:10px;
+        display:none;
+    }
+
+    .mobile-bar-grid{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:10px;
+    }
+
+    .mobile-bar-grid a,
+    .mobile-bar-grid button{
+        border:none;
+        background:#f8fafc;
+        border-radius:18px;
+        padding:12px;
+        font-weight:800;
+        color:var(--primary);
+        font-size: .9rem;
+    }
+
+    .empty-media{
+        min-height:420px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        flex-direction:column;
+        gap:12px;
+        color:#94a3b8;
+        background:linear-gradient(180deg, #f8fafc, #eef2f7);
+        border-radius:24px;
+        border:1px dashed #cbd5e1;
+        padding: 20px;
+        text-align: center;
+    }
+
+    @media (max-width: 1200px){
+        .hero-stats{
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 992px){
+        .estate-grid{
+            grid-template-columns: 1fr;
+        }
+
+        .sticky-side{
+            position:static;
+        }
+
+        .gallery-stage{
+            grid-template-columns: 1fr;
+        }
+
+        .media-rail{
+            flex-direction:row;
+            max-height:none;
+            overflow:auto;
+        }
+
+        .rail-item{
+            min-width:110px;
+            width:110px;
+            height:88px;
+        }
+
+        .main-preview{
+            min-height:420px;
+        }
+
+        .quick-actions{
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px){
+        .estate-shell{
+            padding-bottom:110px;
+        }
+
+        .glass-hero{
+            padding:14px;
+            border-radius:18px;
+        }
+
+        .hero-title{
+            font-size:1.25rem;
+            line-height:1.6;
+            margin:12px 0 8px;
+        }
+
+        .hero-subtitle{
+            font-size:.92rem;
+            line-height:1.8;
+            margin-bottom:14px;
+        }
+
+        .hero-badge{
+            font-size:.78rem;
+            padding:8px 12px;
+        }
+
+        .chips{
+            gap:8px;
+        }
+
+        .chip{
+            font-size:.82rem;
+            padding:8px 10px;
+        }
+
+        .hero-stats{
+            grid-template-columns: 1fr 1fr;
+            gap:10px;
+            margin-top:14px;
+        }
+
+        .hero-stat{
+            padding:12px;
+            border-radius:14px;
+        }
+
+        .hero-stat .label{
+            font-size:.75rem;
+            margin-bottom:4px;
+        }
+
+        .hero-stat .value{
+            font-size:.95rem;
+            display:flex;
+            align-items:center;
+            gap:6px;
+            flex-wrap:wrap;
+            line-height:1.5;
+        }
+
+        .hero-stat .value img,
+        .price-value img{
+            width:14px !important;
+            height:14px !important;
+            flex-shrink:0;
+        }
+
+        .cardx-head{
+            padding:16px 16px 0;
+        }
+
+        .section-body,
+        .media-layout{
+            padding:16px;
+        }
+
+        .cardx-title{
+            font-size:1rem;
+        }
+
+        .cardx-subtitle{
+            font-size:.84rem;
+        }
+
+        .main-preview{
+            min-height:240px;
+            border-radius:16px;
+        }
+
+        .floating-actions{
+            top:10px;
+            left:10px;
+            gap:8px;
+            max-width: calc(100% - 20px);
+        }
+
+        .fab-btn{
+            width:38px;
+            height:38px;
+            font-size:.9rem;
+        }
+
+        .thumb-counter{
+            top:10px;
+            right:10px;
+            padding:6px 10px;
+            font-size:.75rem;
+            max-width: calc(100% - 20px);
+        }
+
+        .preview-overlay{
+            padding:12px;
+        }
+
+        .preview-overlay .title{
+            font-size:.92rem;
+        }
+
+        .preview-overlay .meta{
+            font-size:.78rem;
+        }
+
+        .media-tab,
+        .nearby-btn{
+            padding:10px 12px;
+            font-size:.82rem;
+        }
+
+        .detail-grid{
+            grid-template-columns: 1fr;
+        }
+
+        .offer-inner{
+            grid-template-columns: 1fr;
+        }
+
+        .offer-thumb{
+            width:100%;
+            height:180px;
+        }
+
+        .fullscreen-gallery{
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .mobile-bar{
+            display:block;
+        }
+
+        .seller-body{
+            padding:0 16px 18px;
+        }
+
+        .seller-metrics{
+            grid-template-columns: 1fr 1fr;
+            gap:10px;
+        }
+
+        #map{
+            height: 320px;
+        }
+    }
+
+  @media (max-width: 576px){
+
+    .hero-stats{
+        grid-template-columns: 1fr 1fr; /* صفين */
+        gap:8px;
+    }
+
+    /* خلي السعر ياخذ صف كامل */
+    .hero-stat:first-child{
+        grid-column: span 2;
+        background:#ffffff;
+        color:#0f172a;
+        border:none;
+    }
+
+    .hero-stat:first-child .label{
+        color:#64748b;
+    }
+
+    .hero-stat:first-child .value{
+        font-size:1.1rem;
+        color:#0f172a;
+    }
+
+    .hero-stat:first-child .value img{
+        width:14px;
+        height:14px;
+    }
+
+    .hero-stat{
+        padding:10px;
+        border-radius:12px;
+    }
+
+    .hero-stat .label{
+        font-size:.7rem;
+    }
+
+    .hero-stat .value{
+        font-size:.85rem;
+    }
+}
+
+        .hero-stat .value{
+            font-size:.9rem;
+        }
+
+        .quick-actions{
+            grid-template-columns: 1fr;
+        }
+
+        .fullscreen-gallery{
+            grid-template-columns: 1fr;
+        }
+
+        .mobile-bar{
+            left:8px;
+            right:8px;
+            bottom:8px;
+            padding:8px;
+            border-radius:18px;
+        }
+
+        .mobile-bar-grid a,
+        .mobile-bar-grid button{
+            padding:10px;
+            font-size:.82rem;
+        }
+
+        .seller-metrics{
+            grid-template-columns: 1fr;
+        }
+
+        .main-preview{
+            min-height:220px;
+        }
+
+        .empty-media{
+            min-height:260px;
+        }
+
+        #map{
+            height: 280px;
+        }
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="estate-shell">
+    <div class="container rtl text-align-direction">
+
+        {{-- HERO --}}
+    
+    <section class="glass-hero">
+    <div class="row g-4 align-items-end">
+
+        <div class="col-lg-8">
+
+            <span class="hero-badge">
+                <i class="fa-solid fa-location-dot"></i>
+                {{ $estate["city"] ?? '—' }}
+                @if(!empty($estate["districts"]))
+                    - {{ $estate["districts"] }}
+                @endif
+            </span>
+
+            <h1 class="hero-title">
+                {{ $estate['title'] ?? 'تفاصيل العقار' }}
+            </h1>
+
+            <div class="hero-subtitle">
+                {{ $estate["short_description"] ?? 'تفاصيل مميزة وتجربة عرض حديثة للعقار.' }}
+            </div>
+
+            <div class="chips">
+                <div class="chip">
+                    <i class="fa-solid fa-building"></i>
+                    {{ $estate["category_name"] ?? '-' }}
+                </div>
+
+                @if(!empty($estate["advertisement_type"]))
+                    <div class="chip">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        {{ $estate["advertisement_type"] }}
+                    </div>
+                @endif
+
+                @if(!empty($estate["space"]))
+                    <div class="chip">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                        {{ $estate["space"] }}
+                    </div>
+                @endif
+            </div>
+
+        </div>
+
+        <!-- Stats -->
+        <div class="col-lg-4">
+            <div class="hero-stats">
+
+                <!-- السعر (مميز) -->
+                <div class="hero-stat highlight">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div>
+                        <span class="label">السعر</span>
+                        <div class="value price-value">
+                            <span>{{ $estate["price"] ?? '-' }}</span>
+                            <img src="{{ asset('public/assets/images/ryal.png') }}" alt="sar">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-stat">
+                    <div class="stat-icon">
+                        <i class="fa-regular fa-eye"></i>
+                    </div>
+                    <div>
+                        <span class="label">المشاهدات</span>
+                        <div class="value">{{ $estate["view"] ?? 0 }}</div>
+                    </div>
+                </div>
+
+                <div class="hero-stat">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-bed"></i>
+                    </div>
+                    <div>
+                        <span class="label">عدد الغرف</span>
+                        <div class="value">{{ $estate["numberOfRooms"] ?? '—' }}</div>
+                    </div>
+                </div>
+
+                <div class="hero-stat">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div>
+                        <span class="label">نوع الملكية</span>
+                        <div class="value">{{ $estate["ownership_type"] ?? '—' }}</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+        <div class="estate-grid">
+            {{-- MAIN --}}
+            <div class="main-col">
+
+                {{-- MEDIA EXPERIENCE --}}
+                <section class="cardx">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">عرض الوسائط والتفاعل</h3>
+                            <div class="cardx-subtitle">تصميم تفاعلي لعرض الصور، الفيديو، الجولات، والمخططات</div>
+                        </div>
+                    </div>
+
+                    <div class="media-layout">
+                        <div class="media-tabs">
+                            <button class="media-tab active" data-media-tab="images">الصور</button>
+                            <button class="media-tab" data-media-tab="videos">الفيديو</button>
+                            <button class="media-tab" data-media-tab="tour">الجولة الافتراضية</button>
+                            <button class="media-tab" data-media-tab="plans">المخططات</button>
+                            <button class="media-tab" data-media-tab="street">منظور الشارع</button>
+                        </div>
+
+                        <div id="media-panels">
+                            {{-- IMAGES --}}
+                            <div class="media-panel" data-panel="images">
+                                @php
+                                    $estateImages = is_array($estate['images'] ?? null) ? $estate['images'] : [];
+                                @endphp
+
+                                @if(count($estateImages))
+                                    <div class="gallery-stage">
+                                        <div class="main-preview" id="mainImagePreview">
+                                            <div class="floating-actions">
+                                                <button class="fab-btn" onclick="openMediaGallery('images')" title="فتح المعرض">
+                                                    <i class="fa-solid fa-expand"></i>
+                                                </button>
+                                                <a class="fab-btn"
+                                                   target="_blank"
+                                                   href="https://wa.me/?text={{ urlencode('! تم مشاركة هذا لك من منصة أبعاد العقارية: ' . url('/details/' . $estate['id'])) }}"
+                                                   title="مشاركة">
+                                                    <i class="fa-solid fa-share-nodes"></i>
+                                                </a>
+                                            </div>
+
+                                            <div class="thumb-counter">
+                                                <span id="imageCurrentIndex">1</span> / {{ count($estateImages) }}
+                                            </div>
+
+                                            <img id="mainGalleryImage"
+                                                 src="{{ asset('storage/app/public/estate/'.$estateImages[0]) }}"
+                                                 alt="{{ $estate['title'] }}"
+                                                 onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
+
+                                            <div class="preview-overlay">
+                                                <div class="title">{{ $estate['title'] }}</div>
+                                                <div class="meta">{{ $estate["address"] ?? ($estate["city"] ?? '') }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="media-rail" id="imageRail">
+                                            @foreach($estateImages as $index => $photo)
+                                                <button class="rail-item {{ $index === 0 ? 'active' : '' }}"
+                                                        data-type="image"
+                                                        data-index="{{ $index }}"
+                                                        data-src="{{ asset('storage/app/public/estate/'.$photo) }}">
+                                                    <img src="{{ asset('storage/app/public/estate/'.$photo) }}"
+                                                         onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'"
+                                                         alt="thumb">
+                                                    <span class="rail-badge">{{ $index + 1 }}</span>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="empty-media">
+                                        <i class="fa-regular fa-image fa-2x"></i>
+                                        <div>لا توجد صور متاحة حالياً</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- VIDEOS --}}
+                            <div class="media-panel d-none" data-panel="videos">
+                                @if(!empty($estate['video_url']) || !empty($estate['skyview']))
+                                    <div class="gallery-stage">
+                                        <div class="main-preview" id="videoStage">
+                                            @php
+                                                $firstVideo = !empty($estate['video_url'])
+                                                    ? asset('storage/app/public/videos/' . $estate['video_url'])
+                                                    : asset('storage/app/public/videos/' . $estate['skyview']);
+                                            @endphp
+
+                                            <video id="mainVideoPlayer" controls playsinline>
+                                                <source id="mainVideoSource" src="{{ $firstVideo }}" type="video/mp4">
+                                            </video>
+
+                                            <div class="preview-overlay">
+                                                <div class="title" id="videoTitleOverlay">
+                                                    {{ !empty($estate['video_url']) ? 'فيديو العقار' : 'المنظور الجوي' }}
+                                                </div>
+                                                <div class="meta">عرض تفاعلي مباشر للوسائط المرئية</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="media-rail">
+                                            @if(!empty($estate['video_url']))
+                                                <button class="rail-item active video-selector"
+                                                        data-video-src="{{ asset('storage/app/public/videos/' . $estate['video_url']) }}"
+                                                        data-video-title="فيديو العقار">
+                                                    <video muted>
+                                                        <source src="{{ asset('storage/app/public/videos/' . $estate['video_url']) }}" type="video/mp4">
+                                                    </video>
+                                                    <span class="rail-badge">فيديو</span>
+                                                </button>
+                                            @endif
+
+                                            @if(!empty($estate['skyview']))
+                                                <button class="rail-item video-selector {{ empty($estate['video_url']) ? 'active' : '' }}"
+                                                        data-video-src="{{ asset('storage/app/public/videos/' . $estate['skyview']) }}"
+                                                        data-video-title="المنظور الجوي">
+                                                    <video muted>
+                                                        <source src="{{ asset('storage/app/public/videos/' . $estate['skyview']) }}" type="video/mp4">
+                                                    </video>
+                                                    <span class="rail-badge">جوي</span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="empty-media">
+                                        <i class="fa-solid fa-film fa-2x"></i>
+                                        <div>لا يوجد فيديو لهذا العقار</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- TOUR --}}
+                            <div class="media-panel d-none" data-panel="tour">
+                                @if(!empty($estate['ar_path']))
+                                    <div class="main-preview" style="min-height:560px;">
+                                        <iframe src="{{ $estate['ar_path'] }}" allowfullscreen></iframe>
+                                        <div class="preview-overlay">
+                                            <div class="title">جولة افتراضية</div>
+                                            <div class="meta">استكشاف داخلي تفاعلي للعقار</div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="empty-media">
+                                        <i class="fa-solid fa-vr-cardboard fa-2x"></i>
+                                        <div>لا توجد جولة افتراضية متاحة</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- PLANS --}}
+                            <div class="media-panel d-none" data-panel="plans">
+                                @php
+                                    $planned = is_array($estate['planned'] ?? null) ? $estate['planned'] : [];
+                                @endphp
+
+                                @if(count($planned))
+                                    <div class="gallery-stage">
+                                        <div class="main-preview" id="mainPlanPreview">
+                                            <img id="mainPlanImage"
+                                                 src="{{ asset('storage/app/public/estate/'.$planned[0]) }}"
+                                                 alt="plan"
+                                                 onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
+                                            <div class="preview-overlay">
+                                                <div class="title">المخطط الرئيسي</div>
+                                                <div class="meta">عرض واضح ومركز للمخططات</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="media-rail" id="planRail">
+                                            @foreach($planned as $index => $plan)
+                                                <button class="rail-item {{ $index === 0 ? 'active' : '' }}"
+                                                        data-type="plan"
+                                                        data-index="{{ $index }}"
+                                                        data-src="{{ asset('storage/app/public/estate/'.$plan) }}">
+                                                    <img src="{{ asset('storage/app/public/estate/'.$plan) }}"
+                                                         onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'"
+                                                         alt="plan">
+                                                    <span class="rail-badge">مخطط</span>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="empty-media">
+                                        <i class="fa-solid fa-drafting-compass fa-2x"></i>
+                                        <div>لا توجد مخططات متاحة</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- STREET --}}
+                            <div class="media-panel d-none" data-panel="street">
+                                <div class="main-preview" style="min-height:560px;" id="streetViewPanel">
+                                    <div class="empty-media" style="min-height:560px;">
+                                        <button class="cta-primary" type="button" onclick="loadStreetViewInline()">
+                                            <i class="fa-solid fa-road"></i>
+                                            عرض منظور الشارع
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- QUICK ACTIONS --}}
+                <section class="cardx mt-4">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">التفاعل السريع</h3>
+                            <div class="cardx-subtitle">وصول أسرع للوسائط والوظائف الرئيسية</div>
+                        </div>
+                    </div>
+
+                    <div class="section-body">
+                        <div class="quick-actions">
+                            <button class="quick-action" onclick="switchMediaTab('images')">
+                                <i class="fa-regular fa-images"></i>
+                                معرض الصور
+                            </button>
+                            <button class="quick-action" onclick="switchMediaTab('videos')">
+                                <i class="fa-solid fa-circle-play"></i>
+                                عرض الفيديو
+                            </button>
+                            <button class="quick-action" onclick="switchMediaTab('tour')">
+                                <i class="fa-solid fa-vr-cardboard"></i>
+                                الجولة الافتراضية
+                            </button>
+                            <button class="quick-action" onclick="switchMediaTab('street'); loadStreetViewInline();">
+                                <i class="fa-solid fa-road"></i>
+                                منظور الشارع
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- FEATURES --}}
+                @if(($estate['category'] ?? null) != "5" && !empty($estate['property']))
+                <section class="cardx mt-4">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">المزايا الأساسية</h3>
+                            <div class="cardx-subtitle">بطاقات مختصرة بدل عرض تقليدي مكرر</div>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="chips">
+                            @foreach($estate['property'] as $property)
+                                <div class="chip">
+                                    <strong>{{ $property->number }}</strong>
+                                    <span>{{ $property->name }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+                @endif
+
+                {{-- DETAILS --}}
+                <section class="cardx mt-4">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">تفاصيل العقار</h3>
+                            <div class="cardx-subtitle">تنسيق حديث بأسلوب بطاقات بدل جدول تقليدي مرهق</div>
+                        </div>
+                    </div>
+
+                    <div class="section-body">
+                        <div class="detail-grid">
+                            @if($estate["advertisement_type"] ?? null)
+                                <div class="detail-item"><span class="k">الغرض من الإعلان</span><div class="v">{{ $estate["advertisement_type"] }}</div></div>
+                            @endif
+                            @if($estate["districts"] ?? null)
+                                <div class="detail-item"><span class="k">الحي</span><div class="v">{{ $estate["districts"] }}</div></div>
+                            @endif
+                            @if($estate["city"] ?? null)
+                                <div class="detail-item"><span class="k">المدينة</span><div class="v">{{ $estate["city"] }}</div></div>
+                            @endif
+                            @if($estate["space"] ?? null)
+                                <div class="detail-item"><span class="k">المساحة</span><div class="v">{{ $estate["space"] }}</div></div>
+                            @endif
+                            @if(!empty($estate["build_space"]) && $estate["build_space"] != "undefined")
+                                <div class="detail-item"><span class="k">مساحة البناء</span><div class="v">{{ $estate["build_space"] }}</div></div>
+                            @endif
+                            @if(!empty($estate["age_estate"]) && $estate["age_estate"] != "undefined" && $estate["age_estate"] != "null")
+                                <div class="detail-item"><span class="k">عمر العقار</span><div class="v">{{ $estate["age_estate"] }}</div></div>
+                            @endif
+                            @if($estate["price"] ?? null)
+                                <div class="detail-item">
+                                    <span class="k">@if(($estate["category_name"] ?? '') == "ارض") سعر المتر @else السعر @endif</span>
+                                    <div class="v price-value">
+                                        <span>{{ $estate["price"] }}</span>
+                                        <img src="{{ asset('public/assets/images/ryal.png') }}" alt="sar">
+                                    </div>
+                                </div>
+                            @endif
+                            @if(($estate["category_name"] ?? '') == "ارض" && ($estate["total_price"] ?? null))
+                                <div class="detail-item">
+                                    <span class="k">إجمالي السعر</span>
+                                    <div class="v">{{ $estate["total_price"] }}</div>
+                                </div>
+                            @endif
+                            @if($estate["ownership_type"] ?? null)
+                                <div class="detail-item"><span class="k">نوع الملكية</span><div class="v">{{ $estate["ownership_type"] }}</div></div>
+                            @endif
+                            @if($estate["property_face"] ?? null)
+                                <div class="detail-item"><span class="k">واجهة العقار</span><div class="v">{{ $estate["property_face"] }}</div></div>
+                            @endif
+                            @if($estate["street_space"] ?? null)
+                                <div class="detail-item"><span class="k">عرض الشارع</span><div class="v">{{ $estate["street_space"] }}</div></div>
+                            @endif
+                            @if(($estate["category_name"] ?? '') != 'ارض' && ($estate["numberOfRooms"] ?? null))
+                                <div class="detail-item"><span class="k">عدد الغرف</span><div class="v">{{ $estate["numberOfRooms"] }}</div></div>
+                            @endif
+                            @if($estate["ad_license_number"] ?? null)
+                                <div class="detail-item"><span class="k">رقم رخصة الإعلان</span><div class="v">{{ $estate["ad_license_number"] }}</div></div>
+                            @endif
+                            @if($estate["deed_number"] ?? null)
+                                <div class="detail-item"><span class="k">رقم وثيقة الملكية</span><div class="v">{{ $estate["deed_number"] }}</div></div>
+                            @endif
+                        </div>
+                    </div>
+                </section>
+
+                {{-- DESCRIPTION --}}
+                <section class="cardx mt-4">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">الوصف التفصيلي</h3>
+                            <div class="cardx-subtitle">عرض مريح بصريًا ومخصص للنصوص الطويلة</div>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="description-box">{{ $estate["long_description"] ?? '' }}</div>
+                    </div>
+                </section>
+
+                {{-- MAP --}}
+                <section class="cardx mt-4">
+                    <div class="cardx-head">
+                        <div>
+                            <h3 class="cardx-title">الموقع والخدمات القريبة</h3>
+                            <div class="cardx-subtitle">فلترة تفاعلية للمرافق المحيطة بالعقار</div>
+                        </div>
+                    </div>
+
+                    <div class="nearby-toolbar">
+                        <button class="nearby-btn" onclick="setNearbyActive(this); searchNearby('school')">المدارس</button>
+                        <button class="nearby-btn" onclick="setNearbyActive(this); searchNearby('hospital')">المستشفيات</button>
+                        <button class="nearby-btn" onclick="setNearbyActive(this); searchNearby('pharmacy')">الصيدليات</button>
+                        <button class="nearby-btn" onclick="setNearbyActive(this); searchNearby('mosque')">المساجد</button>
+                        <button class="nearby-btn" onclick="setNearbyActive(this); searchNearby('restaurant')">المطاعم</button>
+                    </div>
+
+                    <div class="map-shell">
+                        <div id="map"></div>
+                    </div>
+                </section>
+            </div>
+
+            {{-- SIDEBAR --}}
+            <aside class="sticky-side">
+                <section class="seller-card">
+                    <div class="seller-cover"></div>
+                    <div class="seller-body text-center">
+                        <img class="seller-avatar"
+                             src="{{ $estate['users']['image'] ? asset('storage/app/public/profile/' . $estate['users']['image']) : asset('storage/app/public/profile/default_avatar.png') }}"
+                             onerror="this.src='{{ asset('storage/app/public/profile/default_avatar.png') }}'">
+
+                        <div class="seller-name">{{ $estate['users']['name'] ?? '-' }}</div>
+                        <div class="seller-phone">{{ $estate['users']['phone'] ?? '-' }}</div>
+
+                        <div class="seller-metrics">
+                            <div class="seller-metric">
+                                <span class="k">رخصة فال</span>
+                                <div class="v">{{ $estate['license_number'] ?? '0' }}</div>
+                            </div>
+                            <div class="seller-metric">
+                                <span class="k">العضوية</span>
+                                <div class="v">{{ $estate['users']['membership_type'] ?? '0' }}</div>
+                            </div>
+                        </div>
+
+                        <div class="cta-stack">
+                            @if(auth('customer')->id())
+                                <button class="cta-primary" data-bs-toggle="modal" data-bs-target="#chatting_modal">
+                                    <i class="fa-solid fa-comments"></i>
+                                    {{ translate('chat_with_advertiser') }}
+                                </button>
+                            @endif
+
+                            <a class="cta-secondary" href="tel:{{ $estate['users']['phone'] }}">
+                                <i class="fa-solid fa-phone"></i>
+                                اتصال مباشر
+                            </a>
+
+                            <a class="cta-secondary"
+                               target="_blank"
+                               href="https://wa.me/{{ $estate['users']['phone'] }}?text={{ urlencode('السلام عليكم أرغب في التواصل معك بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
+                                <i class="fa-brands fa-whatsapp"></i>
+                                واتساب
+                            </a>
+
+                            @if(auth('customer')->id())
+                                <button class="cta-secondary" data-bs-toggle="modal" data-bs-target="#reportModal">
+                                    <i class="fa-regular fa-flag"></i>
+                                    {{ translate('Report Property') }}
+                                </button>
+                            @endif
+                        </div>
+
+                        <div class="social-row">
+                            @if(!empty($userInfo->snapchat))
+                                <a href="{{ $userInfo->snapchat }}" target="_blank"><img src="{{ asset('public/assets/images/snap.png') }}" alt=""></a>
+                            @endif
+                            @if(!empty($userInfo->twitter))
+                                <a href="{{ $userInfo->twitter }}" target="_blank"><img src="{{ asset('public/assets/images/twiter.png') }}" alt=""></a>
+                            @endif
+                            @if(!empty($userInfo->instagram))
+                                <a href="{{ $userInfo->instagram }}" target="_blank"><img src="{{ asset('public/assets/images/instgram.png') }}" alt=""></a>
+                            @endif
+                            @if(!empty($userInfo->youtube))
+                                <a href="{{ $userInfo->youtube }}" target="_blank"><img src="{{ asset('public/assets/images/youtube.png') }}" alt=""></a>
+                            @endif
+                            @if(!empty($userInfo->tiktok))
+                                <a href="{{ $userInfo->tiktok }}" target="_blank"><img src="{{ asset('public/assets/images/tiktok.png') }}" alt=""></a>
+                            @endif
+                        </div>
+                    </div>
+                </section>
+
+                <section class="side-mini-card">
+                    <div class="mini-stat">
+                        <img src="{{ asset('public/assets/images/view.png') }}" alt="">
+                        <div>عدد المشاهدات: <strong class="text-primary">{{ $estate["view"] ?? 0 }}</strong></div>
+                    </div>
+                    <div class="mini-stat">
+                        <img src="{{ asset('public/assets/images/offer_icon.png') }}" alt="">
+                        <div>عدد مقدمي الخدمة: <strong class="text-primary">{{ count($estate['service_offers']) ?? 0 }}</strong></div>
+                    </div>
+                </section>
+
+                @if(!empty($estate['service_offers']))
+                <section class="side-mini-card">
+                    <h3 class="cardx-title mb-3">{{ translate('Service provider offers') }}</h3>
+
+                    @foreach($estate['service_offers'] as $offer)
+                        <div class="offer-card">
+                            <div class="offer-ribbon">
+                                @if($offer['offer_type'] === 'discount')
+                                    -{{ $offer['discount'] }}%
+                                @elseif($offer['offer_type'] === 'price')
+                                    -{{ $offer['service_price'] }} SAR
+                                @endif
+                            </div>
+
+                            <div class="offer-inner">
+                                <img class="offer-thumb" src="{{ asset('storage/app/public/'.$offer['image']) }}" alt="{{ $offer['title'] }}">
+                                <div>
+                                    <div class="offer-name">{{ $offer['title'] }}</div>
+                                    <div class="offer-price">{{ $offer['service_price'] }} SAR</div>
+                                    <div class="offer-expiry">{{ translate('Expiry Date') }}: {{ $offer['expiry_date'] }}</div>
+                                    <div class="offer-links">
+                                        <a href="tel:{{ $offer['phone_provider'] }}"><i class="fa-solid fa-phone"></i></a>
+                                        <a target="_blank" href="https://wa.me/{{ $offer['phone_provider'] }}?text={{ urlencode('مرحباً، تم التواصل عبر منصة أبعاد بخصوص العرض. رابط الإعلان: ' . url()->current()) }}">
+                                            <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </section>
+                @endif
+            </aside>
+        </div>
+    </div>
+</div>
+
+{{-- MOBILE BAR --}}
+<div class="mobile-bar">
+    <div class="mobile-bar-grid">
+        @if(auth('customer')->id())
+            <button data-bs-toggle="modal" data-bs-target="#chatting_modal">
+                <i class="fa-solid fa-comments d-block mb-1"></i>
+                دردشة
+            </button>
+        @endif
+        <a href="tel:{{ $estate['users']['phone'] }}">
+            <i class="fa-solid fa-phone d-block mb-1"></i>
+            اتصال
+        </a>
+        <a target="_blank" href="https://wa.me/{{ $estate['users']['phone'] }}?text={{ urlencode('السلام عليكم أرغب في التواصل معك بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
+            <i class="fa-brands fa-whatsapp d-block mb-1"></i>
+            واتساب
+        </a>
+    </div>
+</div>
+
+{{-- FULLSCREEN MEDIA MODAL --}}
+<div class="modal fade custom-modal" id="mediaGalleryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">معرض الوسائط</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body p-4" id="mediaGalleryModalBody"></div>
+        </div>
+    </div>
+</div>
+
+{{-- STREET VIEW MODAL --}}
+<div class="modal fade custom-modal" id="streetViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">عرض الشارع</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body p-0" id="street-view-container"></div>
+        </div>
+    </div>
+</div>
+
+{{-- REPORT MODAL --}}
+<div class="modal fade custom-modal" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ translate("Report Property") }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="reportForm">
+                    <div class="mb-3">
+                        <label for="reportReason" class="form-label fw-bold">{{ translate("Reason for Report") }}</label>
+                        <select class="form-control" id="reportReason" name="title" required>
+                            <option value="" disabled selected>{{ translate("Select a reason") }}</option>
+                            <option value="Fraud">{{ translate("Fraud") }}</option>
+                            <option value="Misleading Information">{{ translate("Misleading Information") }}</option>
+                            <option value="Spam">{{ translate("Spam") }}</option>
+                            <option value="Other">سبب آخر</option>
+                        </select>
+                    </div>
+
+                    <input type="hidden" value="{{ $estate['id'] }}" name="estate_id">
+
+                    <div class="mb-3">
+                        <label for="reportText" class="form-label fw-bold">{{ translate("Report Description") }}</label>
+                        <textarea name="description" class="form-control" id="reportText" rows="4" placeholder="{{ translate("Enter your report here") }}" required></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
+                        <button type="submit" class="btn btn-primary">{{ translate("Submit Report") }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- SUCCESS MODAL --}}
+<div class="modal fade custom-modal" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#16a34a,#22c55e);">
+                <h5 class="modal-title">{{ translate("Success") }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="mb-0">تم إرسال البلاغ بنجاح، شكراً لتعاونك معنا.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@include('layouts.front-end.partials.modal._chatting',['seller'=> $estate['users'], 'user_type'=>$estate['user_id']])
+@endsection
+
+@push('script')
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4&libraries=places&callback=initMap" async defer></script>
+
+<script>
+    const estateImages = @json(is_array($estate['images'] ?? null) ? $estate['images'] : []);
+    const estatePlans  = @json(is_array($estate['planned'] ?? null) ? $estate['planned'] : []);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initMediaTabs();
+        initImageGallery();
+        initPlanGallery();
+        initVideoSelector();
+    });
+
+    function initMediaTabs(){
+        const tabs = document.querySelectorAll('.media-tab');
+        const panels = document.querySelectorAll('.media-panel');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(){
+                const target = this.dataset.mediaTab;
+
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                panels.forEach(panel => {
+                    panel.classList.toggle('d-none', panel.dataset.panel !== target);
+                });
+            });
+        });
+    }
+
+    function switchMediaTab(tabName){
+        const tab = document.querySelector(`.media-tab[data-media-tab="${tabName}"]`);
+        if(tab) tab.click();
+    }
+
+    function initImageGallery(){
+        const railItems = document.querySelectorAll('#imageRail .rail-item');
+        const mainImage = document.getElementById('mainGalleryImage');
+        const currentIndex = document.getElementById('imageCurrentIndex');
+
+        if(!railItems.length || !mainImage) return;
+
+        railItems.forEach(item => {
+            item.addEventListener('click', function(){
+                railItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                mainImage.src = this.dataset.src;
+                if(currentIndex) currentIndex.textContent = parseInt(this.dataset.index, 10) + 1;
+            });
+        });
+    }
+
+    function initPlanGallery(){
+        const railItems = document.querySelectorAll('#planRail .rail-item');
+        const mainImage = document.getElementById('mainPlanImage');
+
+        if(!railItems.length || !mainImage) return;
+
+        railItems.forEach(item => {
+            item.addEventListener('click', function(){
+                railItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                mainImage.src = this.dataset.src;
+            });
+        });
+    }
+
+    function initVideoSelector(){
+        const selectors = document.querySelectorAll('.video-selector');
+        const mainSource = document.getElementById('mainVideoSource');
+        const mainPlayer = document.getElementById('mainVideoPlayer');
+        const title = document.getElementById('videoTitleOverlay');
+
+        if(!selectors.length || !mainSource || !mainPlayer) return;
+
+        selectors.forEach(btn => {
+            btn.addEventListener('click', function(){
+                selectors.forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+
+                mainSource.src = this.dataset.videoSrc;
+                if(title) title.textContent = this.dataset.videoTitle || 'فيديو';
+                mainPlayer.load();
+                mainPlayer.play().catch(() => {});
+            });
+        });
+    }
+
+    function openMediaGallery(type){
+        const body = document.getElementById('mediaGalleryModalBody');
+        let html = '';
+
+        if(type === 'images'){
+            if(!estateImages.length){
+                html = '<div class="text-center text-muted">لا توجد صور</div>';
+            }else{
+                html = '<div class="fullscreen-gallery">';
+                estateImages.forEach(img => {
+                    html += `
+                        <img src="{{ asset('storage/app/public/estate') }}/${img}"
+                             onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'"
+                             alt="gallery image">`;
+                });
+                html += '</div>';
+            }
+        }
+
+        body.innerHTML = html;
+        new bootstrap.Modal(document.getElementById('mediaGalleryModal')).show();
+    }
+
+    function loadStreetViewInline(){
+        const lat = Number("{{ $estate['latitude'] ?? 0 }}");
+        const lon = Number("{{ $estate['longitude'] ?? 0 }}");
+        const panel = document.getElementById('streetViewPanel');
+
+        if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+            const apiKey = "AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4";
+            const streetViewUrl = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lon}&heading=210&pitch=10&fov=35`;
+
+            panel.innerHTML = `
+                <iframe
+                    width="100%"
+                    height="100%"
+                    style="border:0;"
+                    src="${streetViewUrl}"
+                    allowfullscreen
+                    loading="lazy"></iframe>
+                <div class="preview-overlay">
+                    <div class="title">منظور الشارع</div>
+                    <div class="meta">استكشاف محيط العقار بشكل مباشر</div>
+                </div>
+            `;
+
+            const container = document.getElementById('street-view-container');
+            if(container){
+                container.innerHTML = `
+                    <iframe
+                        width="100%"
+                        height="580"
+                        style="border:0;display:block;"
+                        src="${streetViewUrl}"
+                        allowfullscreen
+                        loading="lazy"></iframe>
+                `;
+            }
+        } else {
+            panel.innerHTML = `
+                <div class="empty-media" style="min-height:560px;">
+                    <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+                    <div>تعذر عرض منظور الشارع - الإحداثيات غير صالحة</div>
+                </div>
+            `;
+        }
+    }
+
+    function setNearbyActive(button){
+        document.querySelectorAll('.nearby-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+    }
+
+    document.getElementById("reportForm")?.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        let formData = new FormData(this);
+
+        fetch("{{ route('report') }}", {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json"
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { throw new Error(text); });
+            }
+            return response.json();
+        })
+        .then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('reportModal'))?.hide();
+            new bootstrap.Modal(document.getElementById('successModal')).show();
+            document.getElementById("reportForm").reset();
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    let map, service, infowindow, currentLocationMarker, userLocation;
+    window.placeMarkers = [];
+
+    function initMap() {
+        userLocation = new google.maps.LatLng({{ $estate['latitude'] ?? 24.7136 }}, {{ $estate['longitude'] ?? 46.6753 }});
+
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: userLocation,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true
+        });
+
+        currentLocationMarker = new google.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: "موقع العقار",
+            icon: { url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" }
+        });
+
+        infowindow = new google.maps.InfoWindow();
+    }
+
+    function searchNearby(type) {
+        if (!userLocation || !map) return;
+
+        const request = {
+            location: userLocation,
+            radius: 5000,
+            type: type
+        };
+
+        service = new google.maps.places.PlacesService(map);
+        service.nearbySearch(request, (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                if (window.placeMarkers.length) {
+                    window.placeMarkers.forEach(marker => marker.setMap(null));
+                }
+                window.placeMarkers = [];
+                results.forEach(place => createMarker(place));
+            }
+        });
+    }
+
+    function createMarker(place) {
+        if (!place.geometry || !place.geometry.location) return;
+
+        const types = place.types || [];
+        let iconUrl = null;
+
+        for (let i = 0; i < types.length; i++) {
+            iconUrl = getIconForPlaceType(types[i]);
+            if (iconUrl) break;
+        }
+
+        const marker = new google.maps.Marker({
+            map,
+            position: place.geometry.location,
+            icon: iconUrl ? {
+                url: iconUrl,
+                scaledSize: new google.maps.Size(32, 50)
+            } : undefined
+        });
+
+        window.placeMarkers.push(marker);
+
+        google.maps.event.addListener(marker, 'click', () => {
+            infowindow.setContent(place.name || "");
+            infowindow.open(map, marker);
+        });
+    }
+
+    function getIconForPlaceType(placeType) {
+        const iconBase = "{{ asset('public/assets/images/') }}/";
+        switch (placeType) {
+            case 'school': return iconBase + 'mark_school.png';
+            case 'pharmacy': return iconBase + 'mark_pharmcy.png';
+            case 'hospital': return iconBase + 'mark_hosiptal.png';
+            case 'restaurant': return iconBase + 'mark_restaurant.png';
+            default: return null;
+        }
+    }
+</script>
+
+
+<script>
+ $(document).ready(function () {
+    // جلب القيم من السيرفر
+    let adLicenseNumber = "{{ $estate['ad_number'] ?? '' }}";
+    let idType = "{{ $estate['estate_type'] ?? 0 }}";
+    
+     
+    let identity = "{{ $estate['identityـorـunified'] ?? 0 }}";
+
+    // تحديد قيمة advertiserId حسب نوع idType
+    let advertiserId = "";
+    if (idType == 1) {
+        // فرد
+        advertiserId = "{{ $agent['identity'] ?? '' }}";
+    } else if (idType == 2) {
+        // مؤسسة / شركة
+        advertiserId = "{{ $agent['unified_number'] ?? '' }}";
+    }
+
+    console.log("adLicenseNumber:", adLicenseNumber);
+    console.log("idType:", idType);
+    console.log("advertiserId:", identity);
+
+    // إرسال الطلب للسيرفر
+    $.ajax({
+        url: "https://app.abaadapp.sa/api/v1/banners/advertisement/validate",
+        type: "POST",
+        data: {
+            adLicenseNumber: adLicenseNumber,
+            advertiserId: identity,
+            idType: idType
+        },
+
+        success: function (response) {
+            if (response.success === false || response.message === "رقم إعلان غير صحيح") {
+                showFullScreenMessage("الإعلان غير صالح أو منتهي");
+            }
+        },
+
+        error: function (xhr) {
+            if (xhr.responseJSON && xhr.responseJSON.message === "رقم إعلان غير صحيح") {
+                showFullScreenMessage("الإعلان غير صالح أو منتهي");
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                showFullScreenMessage(xhr.responseJSON.message);
+            } else {
+                showFullScreenMessage("حدث خطأ غير متوقع");
+            }
+        }
+    });
+
+    // دالة عرض رسالة شاشة كاملة
+    function showFullScreenMessage(msg) {
+        // اخفاء كل محتوى الصفحة
+        $("body").children().hide();
+
+        // إضافة شاشة كاملة بالرسالة
+        $("body").append(`
+            <div id="full-screen-error" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: 20px;
+                z-index: 999999;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            ">
+                <div style="
+                    background-color: white;
+                    border-radius: 20px;
+                    padding: 40px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    max-width: 600px;
+                    width: 90%;
+                    animation: fadeIn 0.5s ease-in-out;
+                ">
+                    <div style="
+                        color: #e74c3c;
+                        font-size: 80px;
+                        margin-bottom: 20px;
+                    ">
+                        ⚠️
+                    </div>
+                    <h2 style="
+                        color: #2c3e50;
+                        font-size: 28px;
+                        margin-bottom: 15px;
+                        font-weight: 600;
+                    ">
+                        تنبيه
+                    </h2>
+                    <p style="
+                        color: #34495e;
+                        font-size: 20px;
+                        margin-bottom: 30px;
+                        line-height: 1.5;
+                    ">
+                        ${msg}
+                    </p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button id="go-back-btn" style="
+                            padding: 15px 30px;
+                            font-size: 18px;
+                            font-weight: 600;
+                            background: #3498db;
+                            color: white;
+                            border: none;
+                            border-radius: 50px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+                        ">
+                            ⬅ الرجوع للشاشة السابقة
+                        </button>
+                        <button id="refresh-btn" style="
+                            padding: 15px 30px;
+                            font-size: 18px;
+                            font-weight: 600;
+                            background: #2ecc71;
+                            color: white;
+                            border: none;
+                            border-radius: 50px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+                        ">
+                            🔄 إعادة تحميل الصفحة
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                #go-back-btn:hover, #refresh-btn:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+                }
+                
+                @media (max-width: 768px) {
+                    #full-screen-error div {
+                        padding: 30px 20px;
+                    }
+                    
+                    #full-screen-error h2 {
+                        font-size: 24px;
+                    }
+                    
+                    #full-screen-error p {
+                        font-size: 18px;
+                    }
+                    
+                    #go-back-btn, #refresh-btn {
+                        font-size: 16px;
+                        padding: 12px 20px;
+                    }
+                }
+            </style>
+        `);
+
+        // زر الرجوع
+        $("#go-back-btn").on("click", function () {
+            $("#full-screen-error").remove();   // إزالة شاشة الخطأ
+            history.back();                     // العودة للصفحة السابقة
+        });
+        
+        // زر إعادة التحميل
+        $("#refresh-btn").on("click", function () {
+            location.reload();                  // إعادة تحميل الصفحة
+        });
+    }
+});
+</script>
+@endpush

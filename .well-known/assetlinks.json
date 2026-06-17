@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "sa.pdm.abaad.abaad",
+      "sha256_cert_fingerprints": [
+        "B0:80:2B:D2:89:EF:6D:AE:19:30:5A:AB:0B:6F:18:F8:CB:8B:43:0F:DC:98:0F:83:2A:14:99:BC:08:63:84:5E"
+      ]
+    }
+  }
+]

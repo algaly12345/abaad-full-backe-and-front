@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: laravel-ingress
+  namespace: abaad
+  annotations:
+    # K3s يجي مع Traefik — هذا يشغّل HTTPS تلقائي
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    # Redirect HTTP → HTTPS
+    traefik.ingress.kubernetes.io/router.middlewares: abaad-redirect-https@kubernetescrd
+spec:
+  rules:
+  # ── غيّر هذا للدومين بتاعك ──
+  - host: api.yourapp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: laravel-service
+            port:
+              number: 80

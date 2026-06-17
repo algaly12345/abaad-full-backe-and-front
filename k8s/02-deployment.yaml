@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-app
+  namespace: abaad
+  labels:
+    app: laravel
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: laravel
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0       # zero downtime على طول
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      containers:
+      - name: laravel
+        # غيّر هذا لاسم الـ image بتاعك
+        image: YOURDOCKERHUB_USERNAME/abaad-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+
+        # بيانات الـ .env تجي من الـ Secret
+        envFrom:
+        - secretRef:
+            name: laravel-secret
+
+        # متغيرات ثابتة لا تحتاج إخفاء
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: APP_DEBUG
+          value: "false"
+        - name: LOG_CHANNEL
+          value: "stderr"
+
+        # موارد الـ container
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # يتأكد الـ pod شغال قبل ما ياخذ traffic
+        readinessProbe:
+          httpGet:
+            path: /up
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
+
+        # يعيد تشغيل الـ container لو مات
+        livenessProbe:
+          httpGet:
+            path: /up
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          failureThreshold: 3
+
+        volumeMounts:
+        - name: storage
+          mountPath: /var/www/html/storage/app/public
+
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: laravel-storage-pvc

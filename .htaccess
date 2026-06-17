@@ -1,0 +1,28 @@
+<IfModule mod_rewrite.c>
+
+    RewriteEngine On
+
+    # Allow .well-known files
+    RewriteRule ^\.well-known/ - [L]
+
+    # Apple Universal Links
+    <Files "apple-app-site-association">
+        ForceType application/json
+        Header set Content-Type "application/json"
+    </Files>
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+
+</IfModule>

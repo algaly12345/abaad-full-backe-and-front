@@ -1,0 +1,24 @@
+# شغّل هذا يدوياً عند كل deploy يحتاج migration
+# kubectl apply -f k8s/06-migrate-job.yaml
+# kubectl wait --for=condition=complete job/laravel-migrate -n abaad
+# kubectl delete -f k8s/06-migrate-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: laravel-migrate
+  namespace: abaad
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: YOURDOCKERHUB_USERNAME/abaad-app:latest
+        command: ["php", "artisan", "migrate", "--force"]
+        envFrom:
+        - secretRef:
+            name: laravel-secret
+        env:
+        - name: APP_ENV
+          value: "production"

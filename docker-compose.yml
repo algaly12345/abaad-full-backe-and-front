@@ -1,0 +1,79 @@
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: abaad-app
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: AbaadApp
+      APP_ENV: local
+      APP_KEY: base64:CHANGE_THIS_KEY_RUN_php_artisan_key_generate
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: abaad_db
+      DB_USERNAME: abaad_user
+      DB_PASSWORD: secret123
+
+      CACHE_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abaad-net
+    volumes:
+      - storage_data:/var/www/html/storage/app
+
+  db:
+    image: mysql:8.0
+    container_name: abaad-db
+    environment:
+      MYSQL_DATABASE: abaad_db
+      MYSQL_USER: abaad_user
+      MYSQL_PASSWORD: secret123
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - abaad-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: abaad-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - abaad-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  db_data:
+  storage_data:
+
+networks:
+  abaad-net:
+    driver: bridge
