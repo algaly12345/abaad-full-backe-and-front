@@ -23,15 +23,15 @@ Route::prefix('service-providers')->middleware(['provider'])->group(function () 
     Route::prefix('dashboard')->group(function () {
 
 
-       
-    
+
+
         Route::get('/', [DashboardController::class,'dashboard'])->name('service-provider.dashboard');
 
 
 
 
         Route::post('change-language', [DashboardController::class,'changeLanguage'])->name('service-provider.change-language');
-      
+
     });
     Route::prefix('offers')->group(function () {
         Route::get('shop/{shop}', [OfferController::class,'show'])->name('shop');
@@ -73,10 +73,10 @@ Route::prefix('service-providers')->middleware(['provider'])->group(function () 
 
 
     Route::prefix('profile')->group(function () {
-     
-    
-       
-        Route::post('/store-offer', [OfferController::class,'storeOffer'])->name('service-provider.estaes.store-offer');
+
+
+
+//         Route::post('/store-offer', [OfferController::class,'storeOffer'])->name('service-provider.estaes.store-offer');
     });
 
     // Route::prefix('estaes')->group(function () {

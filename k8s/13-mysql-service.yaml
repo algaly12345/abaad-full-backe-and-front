@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: abaad
+spec:
+  # Headless service — مطلوب لـ StatefulSet
+  # يعطي كل pod اسم DNS ثابت: mysql-0.mysql.abaad.svc.cluster.local
+  clusterIP: None
+  selector:
+    app: mysql
+  ports:
+  - port: 3306
+    targetPort: 3306
+    name: mysql

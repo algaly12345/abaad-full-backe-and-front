@@ -10,7 +10,7 @@ services:
     environment:
       APP_NAME: AbaadApp
       APP_ENV: local
-      APP_KEY: base64:CHANGE_THIS_KEY_RUN_php_artisan_key_generate
+      APP_KEY: base64:MEwXt2DGlFhNN2I/gUQM6Oq4o/PKvfh38irbiplDDvk=
       APP_DEBUG: "true"
       APP_URL: http://localhost:8080
 
@@ -69,6 +69,23 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: abaad-phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: "3306"
+      PMA_USER: root
+      PMA_PASSWORD: rootsecret
+      UPLOAD_LIMIT: 300M
+    ports:
+      - "8081:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - abaad-net
 
 volumes:
   db_data:

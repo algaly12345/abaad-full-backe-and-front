@@ -67,7 +67,7 @@ Route::get('zone/get-coordinates/{id}', [ZoneController::class,'getCoordinates']
 // Route::get('/', function () {
 //     return view('welcome');
 // });
-    
+
 Route::get('/estates', [HomeController::class, 'estates'])->name('estates.index2');
 Route::get('/estates/{estate}/edit', [HomeController::class, 'editEstate'])->name('estates.edit');
 Route::put('/estates/{estate}', [HomeController::class, 'updateEstate'])->name('estates.update');
@@ -82,19 +82,19 @@ Route::group(['namespace' => 'Web', 'middleware' => ['guestCheck']], function ()
     Route::get('home',  [HomeController::class,'index'])->name('home');
 
     Route::get('map',  [HomeController::class,'map'])->name('map');
-    
-    
+
+
           Route::put('/Brokerage/PushNotification', [HomeController::class, 'handle']);
-    
-    
+
+
 
 
     Route::get('/',  [HomeController::class,'zones'])->name('zones-main');
 
     Route::get('/properties/zone/{zone_id}', [HomeController::class, 'getPropertiesByZone'])->name('byZone');
-    
-    
-    
+
+
+
 
 
 
@@ -163,7 +163,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
             Route::get('get-login-modal-data', [AuthLoginController::class,'get_login_modal_data'])->name('get-login-modal-data');
 
             Route::get('sign-up',  [RegisterController::class,'register'])->name('sign-up');
-            Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up');
+//             Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up');
             Route::post('sign-up3',   [RegisterController::class,'submit'])->name('sign-up3');
 
              Route::post('sign-provider',   [RegisterController::class,'submit_provider'])->name('sign-provider');
@@ -178,7 +178,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
             Route::get('about-provider',  [RegisterController::class,'about_provider'])->name('about-provider');
 
 
-        
+
 
             Route::get('verify-register/{user_id}', [RegisterController::class, 'showVerificationForm'])->name('verify-register');
             // Route::post('verify-register', [RegisterController::class, 'verify'])->name('verify-register');
@@ -348,7 +348,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
         Route::post('check-license', 'check_license')->name('check-license')->middleware('customer');
 
 
-        
+
 
         Route::post('support-ticket', 'store_ticket')->name('support-ticket');
 
@@ -443,28 +443,28 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
     });
 
 
-    
+
     Route::controller(WishlistController::class)->group(function () {
-   
+
 
         Route::get('view-wishlist', 'viewWishlist')->name('view-wishlist');
-    
+
         Route::post('delete-wishlist', 'deleteWishlist')->name('delete-wishlist');
-     
+
     });
 
-Route::prefix('/estate')->group(function () {
-    Route::get('/create', [EstateContrller::class,'create'])->name('home.create');
-    Route::post('store',[EstateContrller::class,'store'])->name('home.store');
-    Route::get('/success', [EstateContrller::class,'success'])->name('estate.success');
-
-});
+// Route::prefix('/estate')->group(function () {
+//     Route::get('/create', [EstateContrller::class,'create'])->name('home.create');
+//     Route::post('store',[EstateContrller::class,'store'])->name('home.store');
+//     Route::get('/success', [EstateContrller::class,'success'])->name('estate.success');
+//
+// });
 
 Route::prefix('/video')->group(function () {
     Route::get('/', [VideoController::class,'create'])->name('home.create');
     Route::post('video-upload', [ VideoController::class, 'uploadVideo' ])->name('store.video');
 
- 
+
     Route::get('/success', [EstateContrller::class,'success'])->name('estate.success');
 
 });

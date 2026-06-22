@@ -109,17 +109,17 @@ Route::prefix('admin')->middleware(['admin'])->group(function () {
         Route::post('/store', [ServiceProviderController::class,'store'])->name('service-providers.store');
         Route::get('/edit/{user}', [ServiceProviderController::class,'edit'])->name('service-providers.edit');
         Route::put('/update/{user}', [ServiceProviderController::class,'update'])->name('service-providers.update');
-        
-        
+
+
     // ✅ أضف هذا
 Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::class, 'toggleStatus'])
     ->name('service-provider.offers.toggle-status');
-        
-        
 
-    
-    
-    
+
+
+
+
+
     });
 
     Route::prefix('agents')->group(function () {
@@ -184,14 +184,14 @@ Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::
         Route::get('view/{conversation_id}/{user_id}', [ConversationController::class,'view'])->name('message.view');
     });
 
-    Route::prefix('/estate')->group(function () {
-        Route::get('/', [EstateController::class,'index'])->name('estate.index');
-        Route::get('/create', [EstateController::class,'create'])->name('estate.create');
-        Route::post('store', [EstateController::class,'store'])->name('estate.store');
-        Route::get('/edit/{package}', [EstateController::class,'edit'])->name('estate.edit');
-        Route::put('/update/{package}', [EstateController::class,'update'])->name('estate.update');
-
-    });
+//     Route::prefix('/estate')->group(function () {
+//         Route::get('/', [EstateController::class,'index'])->name('estate.index');
+//         Route::get('/create', [EstateController::class,'create'])->name('estate.create');
+//         Route::post('store', [EstateController::class,'store'])->name('estate.store');
+//         Route::get('/edit/{package}', [EstateController::class,'edit'])->name('estate.edit');
+//         Route::put('/update/{package}', [EstateController::class,'update'])->name('estate.update');
+//
+//     });
 
 
     Route::prefix('/business-settings')->group(function () {

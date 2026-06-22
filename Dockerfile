@@ -1,10 +1,7 @@
-# ═══════════════════════════════════════════════════════
-# الخيار 1 (مقترح): Debian — أستقر وأسهل في الـ packages
-# ═══════════════════════════════════════════════════════
-FROM php:8.2-fpm
+FROM php:8.2-fpm-alpine
 
-# ── System packages ──────────────────────────────────
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# ── System dependencies ──────────────────────────────────────────
+RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
@@ -12,12 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     libwebp-dev \
-    libonig-dev \
+    oniguruma-dev \
     libxml2-dev \
-    libicu-dev \
+    icu-dev \
     && docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -32,34 +29,48 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         mbstring \
         xml \
         intl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
 
-# ── Composer ─────────────────────────────────────────
+# ── Composer ─────────────────────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# ── App ──────────────────────────────────────────────
+# ── App ──────────────────────────────────────────────────────────
 WORKDIR /var/www/html
+
 COPY . .
 
 RUN composer install \
         --no-dev \
         --optimize-autoloader \
         --no-interaction \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
+        --no-scripts
+
+# إنشاء مجلدات storage المطلوبة (Git لا يرفع المجلدات الفاضية)
+RUN mkdir -p \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/testing \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# ── Configs ──────────────────────────────────────────
-COPY docker/nginx.conf       /etc/nginx/sites-enabled/default
-COPY docker/php.ini          /usr/local/etc/php/conf.d/custom.ini
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# ── Config files ─────────────────────────────────────────────────
+COPY docker/nginx.conf      /etc/nginx/http.d/default.conf
+COPY docker/php.ini         /usr/local/etc/php/conf.d/custom.ini
+COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/entrypoint.sh   /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
     CMD curl -f http://localhost/up || exit 1
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
