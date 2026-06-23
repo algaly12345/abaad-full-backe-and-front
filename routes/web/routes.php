@@ -163,7 +163,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
             Route::get('get-login-modal-data', [AuthLoginController::class,'get_login_modal_data'])->name('get-login-modal-data');
 
             Route::get('sign-up',  [RegisterController::class,'register'])->name('sign-up');
-            Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up');
+            Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up.submit');
             Route::post('sign-up3',   [RegisterController::class,'submit'])->name('sign-up3');
 
              Route::post('sign-provider',   [RegisterController::class,'submit_provider'])->name('sign-provider');
@@ -461,11 +461,11 @@ Route::prefix('/estate')->group(function () {
 });
 
 Route::prefix('/video')->group(function () {
-    Route::get('/', [VideoController::class,'create'])->name('home.create');
+    Route::get('/', [VideoController::class,'create'])->name('video.create');
     Route::post('video-upload', [ VideoController::class, 'uploadVideo' ])->name('store.video');
 
  
-    Route::get('/success', [EstateContrller::class,'success'])->name('estate.success');
+    Route::get('/success', [EstateContrller::class,'success'])->name('video.success');
 
 });
 Route::get('/test', function () {

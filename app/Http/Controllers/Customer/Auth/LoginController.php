@@ -1,6 +1,3 @@
-
-
-
 <?php
 
 namespace App\Http\Controllers\Customer\Auth;
@@ -31,17 +28,10 @@ class LoginController extends Controller
         $this->middleware('guest:customer', ['except' => ['logout']]);
     }
 
-
-
     public function login()
     {
         session()->put('keep_return_url', url()->previous());
-
-
-            return view('web-views.customer-views.auth.login');
-        // }else{
-        //     return redirect()->route('home');
-        // }
+        return view('web-views.customer-views.auth.login');
     }
 
     public function submit(Request $request)
@@ -51,29 +41,26 @@ class LoginController extends Controller
             'password' => 'required'
         ]);
 
-        // Recaptcha validation start
-        // Recaptcha validation end
-
-        // Add country code +966 to the user_id
-        $user_id = '+966' . $request->user_id;
-        $token = PhoneOrEmailVerification::where('phone_or_email','=', $user_id)->first();
+        // تهيئة رقم الهاتف بالصيغة الدولية المعتمدة بالنظام
+        $user_id = '+966' . ltrim($request->user_id, '0');
         $otp_resend_time = Helpers::get_business_settings('otp_resend_time') > 0 ? Helpers::get_business_settings('otp_resend_time') : 0;
 
-
-        // Try to find the user by phone or email
         $user = User::where(['phone' => $user_id])
                     ->orWhere(['email' => $user_id])
                     ->first();
 
         if (!$user) {
             Toastr::info('الرجاء إنشاء حساب جديد قبل تسجيل الدخول.');
-
             return redirect()->route('customer.auth.sign-up')->with('تنبية', 'الرجاء إنشاء حساب جديد قبل تسجيل الدخول.');
-
-
         }
 
         $remember = ($request['remember']) ? true : false;
+
+        // التحقق من صحة كلمة المرور باستخدام guard الخاص بالـ customer
+        if (!auth()->guard('customer')->attempt(['phone' => $user->phone, 'password' => $request->password], $remember)) {
+            Toastr::error('بيانات الدخول أو كلمة المرور غير صحيحة.');
+            return back()->withInput();
+        }
 
         $agent = Agent::where('user_id', $user->id)->first();
 
@@ -87,33 +74,10 @@ class LoginController extends Controller
             ]);
         }
 
+        // في حال لم يكن الهاتف موثقاً من قبل، نرسل كود التفعيل
+        if (!$user->is_phone_verified) {
+            $new_token_generate = rand(1000, 9999);
 
-
-        // Login attempt check start
-        $max_login_hit = Helpers::get_business_settings('maximum_login_hit') ?? 5;
-        $temp_block_time = Helpers::get_business_settings('temporary_login_block_time') ?? 5; // seconds
-
-        if (!$user) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => translate('credentials_doesnt_match'),
-                    'redirect_url' => ''
-                ]);
-            } else {
-                Toastr::error(translate('credentials_doesnt_match'));
-                return back()->withInput();
-            }
-        }
-        // Login attempt check end
-
-        // Phone or email verification check start
-        $phone_verification = Helpers::get_business_settings('phone_verification');
-        $email_verification = Helpers::get_business_settings('email_verification');
-
-        $new_token_generate = rand(1000, 999);
-
-            // التحقق من وجود رمز مسبق بناءً على رقم الهاتف
             $token = PhoneOrEmailVerification::where('phone_or_email', $user_id)->first();
 
             if ($token) {
@@ -131,7 +95,6 @@ class LoginController extends Controller
                 ]);
             }
 
-            // إرسال رسالة OTP عبر SMS
             $msg = 'مرحبا ' . $request->f_name . '، كود تفعيل رقمك هو: ' . $new_token_generate;
 
             $fields = json_encode([
@@ -152,49 +115,30 @@ class LoginController extends Controller
             $server_output = curl_exec($ch);
             curl_close($ch);
 
-            // إعادة التوجيه إلى شاشة التحقق
-            // return response()->json([
-            //     'status' => 1,
-            //     'message' => 'تم التسجيل بنجاح! يرجى التحقق من OTP.',
-            //     'redirect_url' => route('customer.auth.check', [$user->id]),
-            // ]);
-
-
             return redirect(route('customer.auth.verify-register', [$user->id]));
+        }
 
-
-
-
+        Toastr::success(translate('welcome_back'));
+        return redirect()->route('zones-main');
     }
-
 
     public function logout(Request $request)
     {
         $user = auth()->guard('customer')->user();
 
         if ($user) {
-            // Update the is_phone_verified field to 0 using raw SQL query
             DB::table('users')
                 ->where('id', $user->id)
                 ->update(['is_phone_verified' => 0]);
 
-            // Log out the user
             auth()->guard('customer')->logout();
-
-            // Forget the wish_list session
             session()->forget('wish_list');
-
-            // Display a success message
             Toastr::success(translate('come_back_soon').'!');
-
-            // Redirect to the home route
             return redirect()->route('home');
         }
 
-        // If no user is found, redirect to home
         return redirect()->route('home');
     }
-
 
     public function get_login_modal_data(Request $request)
     {
@@ -203,9 +147,4 @@ class LoginController extends Controller
             'register_modal' => view(VIEW_FILE_NAMES['get_register_modal_data'])->render(),
         ]);
     }
-
-
-
-
-
 }

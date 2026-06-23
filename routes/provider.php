@@ -71,14 +71,6 @@ Route::prefix('service-providers')->middleware(['provider'])->group(function () 
         Route::put('/update/{user}', [ProfileController::class,'update'])->name('service-provider.profile.update');
     });
 
-
-    Route::prefix('profile')->group(function () {
-     
-    
-       
-        Route::post('/store-offer', [OfferController::class,'storeOffer'])->name('service-provider.estaes.store-offer');
-    });
-
     // Route::prefix('estaes')->group(function () {
     Route::get('/', [EstaeController::class,'index'])->name('service-provider.estaes.index');
 

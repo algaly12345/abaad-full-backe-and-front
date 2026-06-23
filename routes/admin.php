@@ -195,11 +195,11 @@ Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::
 
 
     Route::prefix('/business-settings')->group(function () {
-        Route::get('/', [EstateController::class,'index'])->name('estate.index');
-        Route::get('/create', [EstateController::class,'create'])->name('estate.create');
-        Route::post('store', [EstateController::class,'store'])->name('estate.store');
-        Route::get('/edit/{package}', [EstateController::class,'edit'])->name('estate.edit');
-        Route::put('/update/{package}', [EstateController::class,'update'])->name('estate.update');
+        Route::get('/', [EstateController::class,'index'])->name('business-settings.index');
+        Route::get('/create', [EstateController::class,'create'])->name('business-settings.create');
+        Route::post('store', [EstateController::class,'store'])->name('business-settings.store');
+        Route::get('/edit/{package}', [EstateController::class,'edit'])->name('business-settings.edit');
+        Route::put('/update/{package}', [EstateController::class,'update'])->name('business-settings.update');
 
     });
 

@@ -12,7 +12,16 @@ class Zone extends Model
 
 
 
-    protected $fillable = ['name','territory_id','coordinates','status'];
+    protected $fillable = [
+        'name',
+        'name_ar',
+        'image',
+        'territory_id',
+        'coordinates',
+        'status',
+        'latitude',
+        'longitude',
+    ];
 
 
 
