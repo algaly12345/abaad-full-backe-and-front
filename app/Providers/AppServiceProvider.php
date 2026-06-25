@@ -24,7 +24,9 @@ use App\Models\SocialMedia;
 use App\Models\Tag;
 
 use App\Models\FlashDeal;
+use App\Models\Offer;
 use App\Models\Product;
+use App\Observers\OfferObserver;
 use App\Traits\AddonHelper;
 use App\Traits\ThemeHelper;
 use App\Utils\ProductManager;
@@ -73,6 +75,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+
+        if (class_exists(\App\Observers\OfferObserver::class)) {
+            Offer::observe(OfferObserver::class);
+        }
+
+
+            
         if (!App::runningInConsole()) {
             Paginator::useBootstrap();
 

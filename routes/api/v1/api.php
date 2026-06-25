@@ -15,6 +15,8 @@ use App\Http\Controllers\api\v1\WishlistController;
 use App\Http\Controllers\api\v1\ZonAndCityController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\api\v1\ServiceCatalogController;
+
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
     /*
@@ -212,6 +214,27 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     Route::group(['prefix' => 'banners'], function () {
         Route::get('/', [BannerController::class, 'banners']);
         Route::post('advertisement/validate', [EstateController::class, 'validate2']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Services Catalog
+    |--------------------------------------------------------------------------
+    */
+    Route::group(['prefix' => 'services'], function () {
+    
+        // عام: لا يحتاج تسجيل دخول — كتالوج كل الخدمات + بيانات الفلاتر (تشمل قائمة مزودي الخدمة)
+        Route::get('/', [ServiceCatalogController::class, 'index']);
+        Route::get('filters', [ServiceCatalogController::class, 'filtersData']);
+    
+        // محمي: يحتاج تسجيل دخول (مزود الخدمة) — لوحة "خدماتي" + تفعيل/إيقاف خدمة
+        Route::middleware('auth:api')->group(function () {
+            Route::get('my-services', [ServiceCatalogController::class, 'myServices']);
+            Route::post('{id}/toggle-status', [ServiceCatalogController::class, 'toggleStatus']);
+        });
+    
+        // عام أيضًا: تفاصيل خدمة واحدة — يجب أن يبقى آخر سطر داخل المجموعة
+        Route::get('{id}', [ServiceCatalogController::class, 'show']);
     });
 
 });
