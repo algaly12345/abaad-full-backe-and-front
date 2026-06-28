@@ -24,7 +24,7 @@ use App\Http\Controllers\SharedController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Dashboard\Auth\LoginController;
-
+use App\Http\Controllers\Dashboard\ReportController;
 use App\Http\Controllers\Dashboard\ServicePlanController;
 
 
@@ -211,6 +211,25 @@ Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::
         Route::get('/edit/{servicePlan}', [ServicePlanController::class,'edit'])->name('service-plans.edit');
         Route::put('/update/{servicePlan}', [ServicePlanController::class,'update'])->name('service-plans.update');
         Route::delete('/delete/{servicePlan}', [ServicePlanController::class,'destroy'])->name('service-plans.delete');
+    });
+
+
+
+    Route::prefix('/reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])
+            ->name('reports.index');
+
+        Route::get('/estates/chart', [ReportController::class, 'estatesChartData'])
+            ->name('reports.estates.chart');
+
+        Route::get('/users/chart', [ReportController::class, 'usersChartData'])
+            ->name('reports.users.chart');
+
+        Route::get('/estates/breakdown', [ReportController::class, 'estatesBreakdown'])
+            ->name('reports.estates.breakdown');
+
+        Route::get('/users/breakdown', [ReportController::class, 'usersBreakdown'])
+            ->name('reports.users.breakdown');
     });
 
 

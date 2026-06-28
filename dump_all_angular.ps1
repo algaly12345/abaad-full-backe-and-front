@@ -1,8 +1,8 @@
 # dump_all_files.ps1
 param(
-  [string]$SrcPath = ".",                 # المسار الذي تريد تفريغه (مثلاً "." = كامل المشروع)
+  [string]$SrcPath = "./database",                 # المسار الذي تريد تفريغه (مثلاً "." = كامل المشروع)
   [string]$OutDirName = "DUMPS_PROJECT",
-  [string]$OutFileName = "app.txt",
+  [string]$OutFileName = "database.txt",
   [int]$MaxBytesToDump = 2097152,         # 2MB لكل ملف (لتجنب تضخم ملف الدَمب)
   [switch]$IncludeBinary                  # إذا فعّلتها سيضع Base64 للملفات الثنائية
 )

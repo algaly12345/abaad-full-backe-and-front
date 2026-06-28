@@ -11,32 +11,56 @@ use Spatie\Permission\Models\Role;
 
 /**
  * يهيّئ نظام صلاحيات مزودي الخدمة (guard_name = 'api'):
- * - ينشئ كل الصلاحيات المعرّفة في ProviderPermission::LIST.
- * - ينشئ دور ProviderRole::PROVIDER.
- * - يربط الدور بصلاحيات "services.*" فقط (وليس plans.manage-global، المحجوزة
- *   عمدًا لحساب إداري حقيقي مستقبلاً — راجع التعليق في ProviderPermission).
- * - يمنح الدور لكل مستخدم حالي بالفعل من نوع provider (تغطية احتياطية لأي
- *   حساب أُنشئ قبل تفعيل UserObserver أو عبر استعلام DB::table() خام).
  *
- * آمن لإعادة التشغيل (idempotent) بفضل firstOrCreate.
- * التشغيل: php artisan db:seed --class=Database\\Seeders\\ProviderPermissionsSeeder
+ * - إنشاء جميع الصلاحيات المعرفة داخل ProviderPermission::LIST.
+ * - إنشاء دور مزود الخدمة إذا لم يكن موجودًا.
+ * - ربط الدور بالصلاحيات الافتراضية الخاصة بمزود الخدمة.
+ * - عدم منح الصلاحيات الإدارية مثل:
+ *      - plans.manage-global
+ *      - reports.view-global
+ * - منح الدور لجميع المستخدمين الحاليين من نوع provider.
+ *
+ * آمن لإعادة التشغيل (Idempotent).
+ *
+ * التشغيل:
+ * php artisan db:seed --class=Database\\Seeders\\ProviderPermissionsSeeder
  */
 class ProviderPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+         |--------------------------------------------------------------
+         | إنشاء جميع الصلاحيات
+         |--------------------------------------------------------------
+         */
         foreach (ProviderPermission::LIST as $permissionName) {
             Permission::firstOrCreate([
-                'name' => $permissionName,
+                'name'       => $permissionName,
                 'guard_name' => 'api',
             ]);
         }
 
+        /*
+         |--------------------------------------------------------------
+         | إنشاء دور مزود الخدمة
+         |--------------------------------------------------------------
+         */
         $providerRole = Role::firstOrCreate([
-            'name' => ProviderRole::PROVIDER,
+            'name'       => ProviderRole::PROVIDER,
             'guard_name' => 'api',
         ]);
 
+        /*
+         |--------------------------------------------------------------
+         | الصلاحيات الافتراضية لمزود الخدمة
+         |--------------------------------------------------------------
+         |
+         | لا يتم منح الصلاحيات الإدارية مثل:
+         | - PLANS_MANAGE_GLOBAL
+         | - REPORTS_VIEW_GLOBAL
+         |
+         */
         $defaultPermissions = Permission::query()
             ->where('guard_name', 'api')
             ->whereIn('name', [
@@ -45,11 +69,19 @@ class ProviderPermissionsSeeder extends Seeder
                 ProviderPermission::SERVICES_UPDATE,
                 ProviderPermission::SERVICES_DELETE,
                 ProviderPermission::SERVICES_TOGGLE_STATUS,
+
+                // صلاحية الاطلاع على تقارير مزود الخدمة نفسه
+                ProviderPermission::REPORTS_VIEW_OWN,
             ])
             ->get();
 
         $providerRole->syncPermissions($defaultPermissions);
 
+        /*
+         |--------------------------------------------------------------
+         | منح الدور لجميع مزودي الخدمة الحاليين
+         |--------------------------------------------------------------
+         */
         User::query()
             ->where('user_type', User::TYPE_PROVIDER)
             ->whereDoesntHave('roles', function ($query) use ($providerRole) {

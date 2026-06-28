@@ -78,6 +78,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
 
+
+        if (class_exists(\App\Observers\EstateObserver::class)) {
+            \App\Models\Estate::observe(\App\Observers\EstateObserver::class);
+        }
+
+
         if (class_exists(\App\Observers\OfferObserver::class)) {
             Offer::observe(OfferObserver::class);
         }

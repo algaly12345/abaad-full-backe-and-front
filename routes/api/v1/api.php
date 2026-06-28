@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProviderPermission;
 use App\Http\Controllers\api\v1\AgentController;
 use App\Http\Controllers\api\v1\auth\CustomerAuthController;
 use App\Http\Controllers\api\v1\BannerController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\api\v1\CategoryController;
 use App\Http\Controllers\api\v1\ConversationController;
 use App\Http\Controllers\api\v1\CustomerController;
 use App\Http\Controllers\api\v1\EstateController;
+use App\Http\Controllers\Api\v1\EstateSearchController;
 use App\Http\Controllers\api\v1\NotificationController;
 use App\Http\Controllers\api\v1\ServiceProvidertController;
 use App\Http\Controllers\api\v1\WalletController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\api\v1\ServiceCatalogController;
 use App\Http\Controllers\Api\v1\ServiceManagementController;
 use App\Http\Controllers\Api\v1\ServicePlanManagementController;
 use App\Http\Controllers\Api\v1\ProviderPermissionController;
+use App\Http\Controllers\Api\v1\ReportController;
 use App\Http\Controllers\Api\v1\UserPermissionController;
 
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
@@ -303,5 +306,44 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::put('{id}', [ServicePlanManagementController::class, 'update']);
         Route::delete('{id}', [ServicePlanManagementController::class, 'destroy']);
     });
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Estates Catalog (نسخة محسّنة: فلترة + بحث + Pagination حقيقي + كاش)
+    |--------------------------------------------------------------------------
+    | مسارات جديدة موازية لمسارات "estate/*" القديمة، لا تستبدلها. عامة (بدون
+    | تسجيل دخول) لأن تصفح العقارات المفعّلة فعل عام في كل التطبيق الحالي.
+    */
+    Route::group(['prefix' => 'estates'], function () {
+        Route::get('/', [EstateSearchController::class, 'index']);
+        Route::get('{id}', [EstateSearchController::class, 'show']);
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports / Statistics (التقارير والإحصائيات)
+    |--------------------------------------------------------------------------
+    | - provider/dashboard: إحصائيات مزود الخدمة الحالي فقط (صلاحية آمنة تُمنح
+    |   تلقائيًا لكل مزود: reports.view-own).
+    | - global/*: إحصائيات إدارية على مستوى المنصة كلها. مقيّدة بصلاحية
+    |   reports.view-global التي لا تُمنح لأي مزود افتراضيًا (نفس أسلوب
+    |   service-plans أعلاه)، إلى أن يُستحدث حارس Passport إداري حقيقي.
+    */
+    Route::group(['prefix' => 'reports', 'middleware' => ['auth:api', 'provider.api']], function () {
+        Route::get('provider/dashboard', [ReportController::class, 'providerDashboard'])
+            ->middleware('provider.permission:' . ProviderPermission::REPORTS_VIEW_OWN);
+
+        Route::group(['prefix' => 'global', 'middleware' => 'provider.permission:' . ProviderPermission::REPORTS_VIEW_GLOBAL], function () {
+            Route::get('overview', [ReportController::class, 'globalOverview']);
+            Route::get('estates', [ReportController::class, 'globalEstates']);
+            Route::get('users', [ReportController::class, 'globalUsers']);
+            Route::get('charts', [ReportController::class, 'globalCharts']);
+        });
+    });
+
+
 
 });
