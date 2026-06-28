@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ServiceOfferResource extends JsonResource
@@ -17,11 +16,11 @@ class ServiceOfferResource extends JsonResource
             'offer_type'    => $this->offer_type,
             'service_price' => $this->service_price !== null ? (float) $this->service_price : null,
             'discount'      => $this->discount !== null ? (float) $this->discount : null,
+            'discount_type' => $this->discount_type,
+            'formatted_discount' => $this->formatted_discount,
             'expiry_date'   => $this->expiry_date,
             'is_expired'    => $this->expiry_date ? $this->isExpired() : false,
             'status'        => $this->status,
-            // معرّف مقدّم الخدمة الذي أنشأ العرض — يُستخدم في الفرونت لمقارنة الملكية
-            // (مثل إظهار مفتاح تفعيل/إيقاف داخل لوحة "خدماتي")
             'owner_id'      => $this->offer_owner,
 
             'service_type'  => $this->whenLoaded('serviceType', function () {
@@ -47,7 +46,6 @@ class ServiceOfferResource extends JsonResource
                 ]);
             }),
 
-            // مزودو الخدمة الذين وافقوا فعليًا على هذا العرض (status = accept على الـpivot)
             'providers' => $this->whenLoaded('serviceProviders', function () {
                 return $this->serviceProviders->map(fn ($provider) => [
                     'id'        => $provider->id,

@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Dashboard\Auth\LoginController;
 
-
+use App\Http\Controllers\Dashboard\ServicePlanController;
 
 
 
@@ -202,5 +202,16 @@ Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::
         Route::put('/update/{package}', [EstateController::class,'update'])->name('business-settings.update');
 
     });
+
+
+    Route::prefix('/service-plans')->group(function () {
+        Route::get('/', [ServicePlanController::class,'index'])->name('service-plans.index');
+        Route::get('/create', [ServicePlanController::class,'create'])->name('service-plans.create');
+        Route::post('/store', [ServicePlanController::class,'store'])->name('service-plans.store');
+        Route::get('/edit/{servicePlan}', [ServicePlanController::class,'edit'])->name('service-plans.edit');
+        Route::put('/update/{servicePlan}', [ServicePlanController::class,'update'])->name('service-plans.update');
+        Route::delete('/delete/{servicePlan}', [ServicePlanController::class,'destroy'])->name('service-plans.delete');
+    });
+
 
 });

@@ -19,14 +19,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
-
 use App\Helpers\FileUploder;
 class OfferWizardController extends Controller
 {
-    /**
-     * الصفحة الأولى:
-     * اختيار الباقة + الأقسام + المناطق
-     */
     public function stepOne()
     {
         $categories   = Category::all();
@@ -40,9 +35,6 @@ class OfferWizardController extends Controller
         ));
     }
 
-    /**
-     * حفظ الصفحة الأولى في الجلسة ثم الانتقال للصفحة الثانية
-     */
     public function stepOneStore(Request $request)
     {
         $request->validate([
@@ -108,10 +100,6 @@ class OfferWizardController extends Controller
         return redirect()->route('website.offers.step-two');
     }
 
-    /**
-     * الصفحة الثانية:
-     * تفاصيل الخدمة
-     */
     public function stepTwo()
     {
         if (!Session::has('offer_step_one')) {
@@ -125,9 +113,6 @@ class OfferWizardController extends Controller
         return view('website.offers.step-two', compact('serviceTypes', 'stepOne'));
     }
 
-    /**
-     * حفظ الصفحة الثانية + الانتقال للصفحة الثالثة
-     */
     public function stepTwoStore(Request $request)
     {
         if (!Session::has('offer_step_one')) {
@@ -141,8 +126,13 @@ class OfferWizardController extends Controller
             'offer_type' => 'required|in:discount,price',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp',
-            'service_price' => 'nullable|numeric|required_if:offer_type,price',
-            'discount' => 'nullable|numeric|required_if:offer_type,discount',
+            'service_price' => 'nullable|numeric|min:0|required_if:offer_type,price',
+            'discount_type' => 'nullable|in:percentage,fixed|required_if:offer_type,discount',
+            'discount' => ['nullable', 'numeric', 'min:0', 'required_if:offer_type,discount', function ($attribute, $value, $fail) use ($request) {
+                if ($value !== null && $request->discount_type === 'percentage' && (float) $value > 100) {
+                    $fail('نسبة الخصم يجب ألا تتجاوز 100%.');
+                }
+            }],
         ], [
             'title.required' => 'اسم الخدمة أو عنوان العرض مطلوب',
             'service_type.required' => 'يرجى اختيار نوع الخدمة',
@@ -161,6 +151,7 @@ class OfferWizardController extends Controller
             'offer_type' => $request->offer_type,
             'service_price' => $request->service_price,
             'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
             'description' => $request->description,
             'image' => $imagePath,
         ]);
@@ -168,10 +159,6 @@ class OfferWizardController extends Controller
         return redirect()->route('website.offers.step-three');
     }
 
-    /**
-     * الصفحة الثالثة:
-     * بيانات مزود الخدمة
-     */
     public function stepThree()
     {
         if (!Session::has('offer_step_one') || !Session::has('offer_step_two')) {
@@ -185,9 +172,6 @@ class OfferWizardController extends Controller
         return view('website.offers.step-three', compact('stepOne', 'stepTwo'));
     }
 
-    /**
-     * حفظ الصفحة الثالثة + دمج جميع البيانات
-     */
     public function stepThreeStore(Request $request)
     {
         if (!Session::has('offer_step_one') || !Session::has('offer_step_two')) {
@@ -229,9 +213,6 @@ class OfferWizardController extends Controller
         return redirect()->route('website.offers.preview');
     }
 
-    /**
-     * معاينة كل البيانات المحفوظة
-     */
     public function preview()
     {
         $data = Session::get('offer_wizard');
@@ -244,14 +225,19 @@ class OfferWizardController extends Controller
         return view('website.offers.preview', compact('data'));
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string',
             'service_type' => 'required',
-            'service_price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
+            'offer_type' => 'required|in:discount,price',
+            'service_price' => 'nullable|numeric|min:0|required_if:offer_type,price',
+            'discount_type' => 'nullable|in:percentage,fixed|required_if:offer_type,discount',
+            'discount' => ['nullable', 'numeric', 'min:0', 'required_if:offer_type,discount', function ($attribute, $value, $fail) use ($request) {
+                if ($value !== null && $request->discount_type === 'percentage' && (float) $value > 100) {
+                    $fail('نسبة الخصم يجب ألا تتجاوز 100%.');
+                }
+            }],
             'expiry_date' => 'required',
             'description' => 'required',
             'categories' => 'required',
@@ -259,7 +245,6 @@ class OfferWizardController extends Controller
             'image' => 'required'
         ]);
 
-        // ========== معالجة نوع الخدمة ==========
         $check_service_type_exists = ServiceType::where('id', $request->service_type)->first();
         $service_type_id = null;
 
@@ -270,17 +255,16 @@ class OfferWizardController extends Controller
             $service_type_id = $request->service_type;
         }
 
-        // ========== معالجة الصورة ==========
         $image = null;
-        
+
         if ($request->hasFile('image')) {
             $image = FileUploder::uploadOneImage($request, 'offers');
         } elseif ($request->filled('image') && is_string($request->image)) {
             $tempPath = $request->image;
-            
+
             if (str_contains($tempPath, 'temp/')) {
                 $newPath = str_replace('temp/', '', $tempPath);
-                
+
                 if (Storage::disk('public')->exists($tempPath)) {
                     Storage::disk('public')->move($tempPath, $newPath);
                     $image = $newPath;
@@ -292,13 +276,10 @@ class OfferWizardController extends Controller
             }
         }
 
-        // ========== معالجة المستخدم ==========
         $rawPhone = $request->provider_phone;
-        
-        // تنظيف رقم الجوال وتنسيقه
+
         $cleanPhone = preg_replace('/[^0-9]/', '', $rawPhone);
-        
-        // إضافة +966 وإزالة الصفر الأول
+
         if (str_starts_with($cleanPhone, '966')) {
             $finalPhone = '+' . $cleanPhone;
         } elseif (str_starts_with($cleanPhone, '0')) {
@@ -307,23 +288,20 @@ class OfferWizardController extends Controller
             $finalPhone = '+966' . $cleanPhone;
         }
 
-        // البحث عن المستخدم برقم الجوال
         $user = User::where('phone', $finalPhone)->first();
 
-        // إذا لم يكن المستخدم موجودًا، إنشاء مستخدم جديد
         if (!$user) {
             $user = User::create([
                 'name' => $request->provider_name,
                 'email' => $request->provider_email,
                 'phone' => $finalPhone,
                 'is_active' => 1,
-                'password' => bcrypt("1234567"), // كلمة مرور عشوائية
+                'password' => bcrypt("1234567"),
                 'zone_id' => "3",
                 'user_type' => 'provider',
                 'membership_type' => "3434",
             ]);
 
-            // إنشاء ملف مزود الخدمة
             $user->provider()->create([
                 'job' => 'مزود خدمة',
                 'address' => $request->provider_company ?? 'غير محدد',
@@ -339,13 +317,13 @@ class OfferWizardController extends Controller
 
         $userId = $user->id;
 
-        // ========== إنشاء العرض ==========
         $offer = Offer::create([
             'title' => $request->title,
             'expiry_date' => $request->expiry_date,
             'service_price' => $request->service_price,
             'description' => $request->description,
             'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
             'offer_type' => $request->offer_type,
             'service_type_id' => $service_type_id,
             'offer_owner' => 'me',
@@ -353,19 +331,16 @@ class OfferWizardController extends Controller
             'phone_provider' => $finalPhone
         ]);
 
-        // ربط مقدم الخدمة بالعرض
         $offer->serviceProviders()->attach($userId);
 
-        // ربط الفئات والمناطق
         $offer->categories()->attach($request->categories);
         $offer->zones()->attach($request->zones);
         $offer->updateOfferStatusToSended();
 
-        // ========== إنشاء الاشتراك ==========
         $subscription_number = 'SUB-' . strtoupper(uniqid());
 
         ServiceProviderSubscription::create([
-            'user_id' => $userId, // استخدام المعرف الخاص بالمستخدم
+            'user_id' => $userId,
             'service_plan_id' => $request->service_plan_id,
             'duration' => $request->subscription_duration,
             'expiry_date' => $request->expiry_date,
@@ -381,11 +356,9 @@ class OfferWizardController extends Controller
             'number_of_categories' => $request->number_of_categories,
         ]);
 
-        // مسح بيانات الجلسة
         Session::forget(['offer_step_one', 'offer_step_two', 'offer_wizard']);
         Session::put('package_price', $request->package_price);
 
-        // تسجيل دخول المستخدم الجديد تلقائيًا (اختياري)
         auth()->guard('user')->login($user);
 
         toastr()->success('تم حفظ البيانات بنجاح', 'نجاح');
@@ -397,5 +370,3 @@ class OfferWizardController extends Controller
         ]);
     }
 }
-
-

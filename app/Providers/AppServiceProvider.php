@@ -26,7 +26,9 @@ use App\Models\Tag;
 use App\Models\FlashDeal;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Models\User;
 use App\Observers\OfferObserver;
+use App\Observers\UserObserver;
 use App\Traits\AddonHelper;
 use App\Traits\ThemeHelper;
 use App\Utils\ProductManager;
@@ -78,6 +80,13 @@ class AppServiceProvider extends ServiceProvider
 
         if (class_exists(\App\Observers\OfferObserver::class)) {
             Offer::observe(OfferObserver::class);
+        }
+
+        // نظام صلاحيات مزودي الخدمة: ربط دور provider تلقائيًا بأي حساب
+        // user_type=provider عند الإنشاء أو التحديث (انظر تعليقات UserObserver
+        // للتنبيه حول استعلامات DB::table() الخام التي تتجاوز هذا الحدث).
+        if (class_exists(UserObserver::class)) {
+            User::observe(UserObserver::class);
         }
 
 

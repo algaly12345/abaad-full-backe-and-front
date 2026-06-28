@@ -28,8 +28,6 @@ class OfferController extends Controller
 
     public function createOffer()
     {
-
-
         $serviceTypes = ServiceType::all();
         $categories = Category::all();
         $zones = Zone::all();
@@ -37,30 +35,25 @@ class OfferController extends Controller
         return view('service-provider.offers.create-offer', compact('serviceTypes', 'categories', 'zones','servicePlans'));
     }
 
-
     public function storeOffer(Request $request)
     {
-
-
-
-
-    
-    
-
         $request->validate([
             'title' => 'required|string',
             'service_type' => 'required',
-            'service_price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
+            'offer_type' => 'required|in:discount,price',
+            'service_price' => 'nullable|numeric|min:0|required_if:offer_type,price',
+            'discount_type' => 'nullable|in:percentage,fixed|required_if:offer_type,discount',
+            'discount' => ['nullable', 'numeric', 'min:0', 'required_if:offer_type,discount', function ($attribute, $value, $fail) use ($request) {
+                if ($value !== null && $request->discount_type === 'percentage' && (float) $value > 100) {
+                    $fail('نسبة الخصم يجب ألا تتجاوز 100%.');
+                }
+            }],
             'expiry_date' => 'required',
             'description' => 'required',
             'categories' => 'required',
             'zones' => 'required',
             'image' => 'required'
         ]);
-
-
-
 
         $check_service_type_exists = ServiceType::where('id', $request->service_type)->first();
 
@@ -76,8 +69,6 @@ class OfferController extends Controller
             $service_type_id = $request->service_type;
         }
 
-        // DB::beginTransaction();
-        // try {
         $image = null;
         if ($request->has('image')) {
             $image = FileUploder::uploadOneImage($request, 'offers');
@@ -88,15 +79,13 @@ class OfferController extends Controller
             'service_price' => $request->service_price,
             'description' => $request->description,
             'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
             'offer_type' => $request->offer_type,
             'service_type_id' => $service_type_id,
             'offer_owner' => 'me',
             'image' => $image,
             'phone_provider'=>"".auth()->guard('user')->user()->phone.""
-
-
         ]);
-
 
         $offer->serviceProviders()->attach(auth()->guard('user')->user()->id);
         $offer->categories()->attach($request->categories);
@@ -106,19 +95,16 @@ class OfferController extends Controller
         $subscription_number = 'SUB-' . strtoupper(uniqid());
         ServiceProviderSubscription::create([
             'user_id' => auth()->guard('user')->user()->id,
-            'service_plan_id' => $request->service_plan_id, // الباقة المحددة
-            'duration' => $request->subscription_duration, // افتراضي: شهر واحد
-            'expiry_date' =>  $request->expiry_date, // تحويل التاريخ إلى yyyy-mm-dd
-            'subscription_status' => 'pending', // حالة الاشتراك مبدئيًا "معلق"
+            'service_plan_id' => $request->service_plan_id,
+            'duration' => $request->subscription_duration,
+            'expiry_date' =>  $request->expiry_date,
+            'subscription_status' => 'pending',
             'payment_status' => 'unpaid',
             'price' =>  $request->package_price,
             'offer_id' =>  $offer->id,
-            'subscription_number' => $subscription_number, // ✅ حفظ رقم الاشتراك
-          
-            'created_at' => now(), // 👈 أضف هذا إذا لم يتم ملء الحقل تلقائيًا
+            'subscription_number' => $subscription_number,
+            'created_at' => now(),
             'updated_at' => now(),
-
-
             'number_of_ads'=>  $request->number_of_ads,
             'number_of_zone'=>  $request->number_of_zone,
             'number_of_categories'=>  $request->number_of_categories,
@@ -126,39 +112,28 @@ class OfferController extends Controller
 
         Session::put('package_price', $request->package_price);
 
-        // $offer->estates()->attach($estae->id);
         toastr()->success('بنجاح', 'تم حفظ البيانات');
-
-        // return redirect()->route('service-provider.estaes.payment', ['offer_id' => $offer->id]);
 
         return redirect()->route('service-provider.estaes.payment', [
             'offer_id' => $offer->id, 
-            'price' => $request->package_price,  // أضف السعر هنا
-            'subscription_number' => $subscription_number // أضف رقم الاشتراك هنا
+            'price' => $request->package_price,
+            'subscription_number' => $subscription_number
         ]);
-        //return back();
-        // } catch (\Exception $e) {
-        //     DB::rollback();
-        //     throw $e;
-        // }
-
-
-
-
-
-        // toastr()->success('بنجاح', 'تم حفظ البيانات');
     }
 
     public function update(Offer $offer, Request $request)
     {
-
-        // dd($request->all());
-
         $request->validate([
             'title' => 'required|string',
             'service_type' => 'required',
-            'service_price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
+            'offer_type' => 'required|in:discount,price',
+            'service_price' => 'nullable|numeric|min:0|required_if:offer_type,price',
+            'discount_type' => 'nullable|in:percentage,fixed|required_if:offer_type,discount',
+            'discount' => ['nullable', 'numeric', 'min:0', 'required_if:offer_type,discount', function ($attribute, $value, $fail) use ($request) {
+                if ($value !== null && $request->discount_type === 'percentage' && (float) $value > 100) {
+                    $fail('نسبة الخصم يجب ألا تتجاوز 100%.');
+                }
+            }],
             'expiry_date' => 'required|date',
             'description' => 'required',
             'categories' => 'required',
@@ -192,6 +167,7 @@ class OfferController extends Controller
             'service_price' => $request->service_price,
             'description' => $request->description,
             'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
             'offer_type' => $request->offer_type,
             'service_type_id' => $service_type_id,
             'offer_owner' => 'me',
@@ -199,26 +175,13 @@ class OfferController extends Controller
             'phone_provider'=>"09070443070"
         ]);
 
-
-//        $offer->update([
-//            'title' => $request->title,
-//            'expiry_date' => $request->expiry_date,
-//            'service_price' => $request->service_price,
-//            'description' => $request->description,
-//            'discount' => $request->discount,
-//            'offer_type' => $request->offer_type,
-//            'service_type_id' => $service_type_id,
-//            'offer_owner' => 'me',
-//            'phone_provider'=>"09070443070"
-//
-//        ]);
-
         $offer->categories()->sync($request->categories);
         $offer->zones()->sync($request->zones);
 
         toastr()->success('بنجاح', 'تم تعديل البيانات');
         return back();
     }
+
     public function edit(Offer $offer)
     {
         $serviceTypes = ServiceType::all();
@@ -226,6 +189,7 @@ class OfferController extends Controller
         $zones = Zone::all();
         return view('service-provider.offers.edit-offer', compact('serviceTypes', 'categories', 'zones', 'offer'));
     }
+
     public function pendingOffers()
     {
         $offers = Offer::where('offer_owner', 'all')
@@ -234,19 +198,18 @@ class OfferController extends Controller
         })
         ->with(['serviceProviders' => function ($query) {
             $query->where('user_id', auth()->guard('user')->id())
-                  ->with('subscriptions.servicePlan'); // تعديل لاستدعاء الاشتراكات مع الباقة
+                  ->with('subscriptions.servicePlan');
         }])
         ->get();
     
         return view('service-provider.offers.pending', compact('offers'));
     }
-    
 
     public function acceptOffers()
     {
         $offers = Offer::where('offer_owner', 'all')->whereHas('serviceProviders', function ($q) {
             $q->where('user_id', auth()->guard('user')->id())
-            ->where('offer_user.status', 'accpet');
+            ->where('offer_user.status', 'accept');
         })->get();
 
         return view('service-provider.offers.accept', compact('offers'));
@@ -259,45 +222,26 @@ class OfferController extends Controller
         return back();
     }
 
-
-    // public function peindingOwnerOffers()
-    // {
-    //     $offers = Offer::where('offer_owner', 'me')->whereHas('serviceProviders', function ($q) {
-    //         $q->where('user_id', auth()->guard('user')->id());
-    //         //            ->where('offer_user.status', 'pending');
-    //     })->get();
-
-    //     return view('service-provider.offers.pending-owner-offers', compact('offers'));
-    // }
-
-    
     public function acceptOwnerOffers()
     {
         $offers = Offer::where('offer_owner', 'me')->whereHas('serviceProviders', function ($q) {
             $q->where('user_id', auth()->guard('user')->id())
-            ->where('offer_user.status', 'accpet');
+            ->where('offer_user.status', 'accept');
         })->get();
 
         return view('service-provider.offers.accept-owner-offers', compact('offers'));
     }
 
-
-
-
     public function index()
     {
-
-
         $categories = Category::all();
         $shops = Estate::with(['categories'])
             ->searchResults()
             ->paginate(9);
 
-
         $mapShops = $shops->makeHidden([ 'created_at', 'updated_at', 'user_id', 'images']);
         $latitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('latitude') : 51.5073509;
         $longitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('longitude') : -0.12775829999998223;
-
         return view('service-provider.home', compact('categories', 'shops', 'mapShops', 'latitude', 'longitude'));
     }
 
@@ -310,20 +254,13 @@ class OfferController extends Controller
 
     public function delete(Offer $offer)
     {
-
         $offer->categories()->detach();
         $offer->zones()->detach();
         $offer->serviceProviders()->detach();
         $offer->delete();
         toastr()->success('بنجاح', 'تم  حذف العرض');
         return back();
-
     }
-
-
-
- 
-
 
     public function payment(Request $request ,$offer_id)
     {
@@ -333,58 +270,54 @@ class OfferController extends Controller
         $subscriptionNumber = $request->query('subscription_number');
         return view('service-provider.offers.payment',compact('offer', 'price', 'subscriptionNumber'));
     }
-    
-    
+
     public function toggleStatus(Offer $offer)
-{
-    $userId = auth()->guard('user')->id();
+    {
+        $userId = auth()->guard('user')->id();
 
-    $hasAccess = $offer->serviceProviders()
-        ->where('user_id', $userId)
-        ->exists();
+        $hasAccess = $offer->serviceProviders()
+            ->where('user_id', $userId)
+            ->exists();
 
-    abort_unless($hasAccess, 403);
+        abort_unless($hasAccess, 403);
 
-    if ($offer->status === 'cancelled') {
-        $offer->update([
-            'status' => 'accept',
-        ]);
+        if ($offer->status === 'cancelled') {
+            $offer->update([
+                'status' => 'accept',
+            ]);
 
-        toastr()->success('تم تشغيل العرض بنجاح');
-    } else {
-        $offer->update([
-            'status' => 'cancelled',
-        ]);
+            toastr()->success('تم تشغيل العرض بنجاح');
+        } else {
+            $offer->update([
+                'status' => 'cancelled',
+            ]);
 
-        toastr()->success('تم إلغاء تفعيل العرض بنجاح');
+            toastr()->success('تم إلغاء تفعيل العرض بنجاح');
+        }
+
+        return back();
     }
 
-    return back();
-}
+    public function peindingOwnerOffers()
+    {
+        $userId = auth()->guard('user')->id();
 
-
-public function peindingOwnerOffers()
-{
-    $userId = auth()->guard('user')->id();
-
-    $offers = Offer::where('offer_owner', 'me')
-        ->whereHas('serviceProviders', function ($q) use ($userId) {
-            $q->where('user_id', $userId);
-        })
-        ->with([
-            'categories',
-            'zones',
-            'serviceType',
-            'subscriptions.servicePlan',
-            'serviceProviders' => function ($q) use ($userId) {
+        $offers = Offer::where('offer_owner', 'me')
+            ->whereHas('serviceProviders', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
-            },
-        ])
-        ->latest()
-        ->get();
+            })
+            ->with([
+                'categories',
+                'zones',
+                'serviceType',
+                'subscriptions.servicePlan',
+                'serviceProviders' => function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                },
+            ])
+            ->latest()
+            ->get();
 
-    return view('service-provider.offers.pending-owner-offers', compact('offers'));
-}
-
-
+        return view('service-provider.offers.pending-owner-offers', compact('offers'));
+    }
 }

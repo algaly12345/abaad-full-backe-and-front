@@ -9,40 +9,14 @@ use App\Models\Zone;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
-/**
- * طبقة الخدمة الخاصة بـ "كتالوج الخدمات داخل العقارات".
- *
- * فلسفة الأداء (لتجنب الضغط على السيرفر):
- * 1) لا N+1: كل العلاقات (أقسام / مناطق / نوع الخدمة / مقدمي الخدمة) تُجلب بـ eager loading
- *    مع تحديد الأعمدة المطلوبة فقط.
- * 2) Cache بنسخة (Cache Versioning): كل نتائج القوائم تُخزن مع مفتاح يحتوي رقم نسخة
- *    عام (services_catalog:cache_version). أي تعديل/إضافة/حذف لعرض يرفع رقم النسخة فيُبطل
- *    كل نتائج الكاش القديمة فورًا دون الحاجة إلى Cache Tags.
- * 3) Pagination محدودة بحد أقصى لعدد العناصر بالصفحة لمنع طلبات ثقيلة.
- * 4) Scopes في الموديل (Offer) لإعادة استخدام منطق الفلترة وقابليته للاختبار.
- *
- * تحديث: دعم فلتر "مزود الخدمة" (provider_id) + قائمة الخدمات الخاصة بمقدّم خدمة
- * معيّن (owner_id) المستخدمة في شاشة "خدماتي" بالتطبيق.
- */
 class ServiceCatalogService
 {
     private const CACHE_VERSION_KEY = 'services_catalog:cache_version';
-
-    /** مدة بقاء الكاش بالثواني لنتائج القوائم */
-    private const CACHE_TTL = 180; // 3 دقائق
-
-    /** مدة بقاء كاش بيانات الفلاتر (أبطأ تغيّرًا) */
-    private const FILTERS_CACHE_TTL = 900; // 15 دقيقة
-
+    private const CACHE_TTL = 180;
+    private const FILTERS_CACHE_TTL = 900;
     private const DEFAULT_PER_PAGE = 15;
     private const MAX_PER_PAGE = 50;
 
-    /**
-     * جلب قائمة الخدمات مع الفلترة والترتيب والصفحات.
-     *
-     * ملاحظة مهمة: عند تمرير $filters['owner_id'] (لوحة "خدماتي") يجب أن يكون موجودًا في
-     * مفتاح الكاش (buildListCacheKey يضمن ذلك) حتى لا يرى مزود خدمة نتائج مزود آخر.
-     */
     public function list(array $filters): LengthAwarePaginator
     {
         $perPage = (int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE);
@@ -58,9 +32,6 @@ class ServiceCatalogService
         });
     }
 
-    /**
-     * جلب خدمة واحدة بكل علاقاتها (للعرض التفصيلي).
-     */
     public function find(int $offerId): ?Offer
     {
         $cacheKey = 'services_catalog:show:' . $offerId . ':' . $this->getCacheVersion();
@@ -70,16 +41,14 @@ class ServiceCatalogService
         });
     }
 
-    /**
-     * بيانات بناء واجهة الفلترة: الأقسام، المناطق، أنواع الخدمات، مزودو الخدمة المتاحون،
-     * ونطاق السعر المتاح حاليًا.
-     */
     public function filtersData(): array
     {
         $cacheKey = 'services_catalog:filters_data:' . $this->getCacheVersion();
 
         return Cache::remember($cacheKey, self::FILTERS_CACHE_TTL, function () {
+            // استثناء عروض الإدارة الداخلية (broadcast) من نطاق السعر المعروض للمستخدمين
             $priceRange = Offer::query()
+                ->where('offer_owner', '!=', 'all')
                 ->approved()
                 ->notExpired()
                 ->selectRaw('MIN(service_price) as min_price, MAX(service_price) as max_price')
@@ -98,31 +67,20 @@ class ServiceCatalogService
         });
     }
 
-    /**
-     * يجب استدعاؤها بعد أي إضافة/تعديل/حذف لعرض خدمة، أو بعد ربط/فك ربط
-     * categories()/zones()/serviceProviders() عبر attach/sync/detach، لإبطال كل
-     * نتائج الكاش القديمة دفعة واحدة.
-     */
     public static function flushCache(): void
     {
         $current = (int) Cache::get(self::CACHE_VERSION_KEY, 1);
         Cache::forever(self::CACHE_VERSION_KEY, $current + 1);
     }
 
-    /**
-     * مزودو الخدمة الذين لديهم على الأقل عرض واحد معتمد وغير منتهٍ ووافقوا عليه فعليًا
-     * (status = accept على pivot الـ serviceProviders)، تُستخدم لتعبئة فلتر "مزود الخدمة".
-     *
-     * نمرّ عبر علاقة Eloquent (لا أسماء أعمدة/جداول pivot يدوية) لتبقى متوافقة حتى لو
-     * تغيّر اسم جدول الـpivot، ونحدد فقط الأعمدة المطلوبة من users لتقليل الحمل.
-     * (تنبيه: القائمة تشمل كل مزودي الخدمة على مستوى النظام، وليست مفلترة حسب أي
-     * فلاتر أخرى محددة حاليًا في الطلب — هذا تبسيط متعمّد لتفادي تعقيد faceted-search).
-     */
     private function getActiveProviders()
     {
         $providers = collect();
 
+        // استثناء عروض الإدارة الداخلية (broadcast) حتى لا تظهر قبولات مزودي
+        // الخدمة لصفقات الإدارة كـ "مزودي خدمة فعّالين" في كتالوج المستخدم النهائي
         Offer::query()
+            ->where('offer_owner', '!=', 'all')
             ->approved()
             ->notExpired()
             ->with(['serviceProviders' => function ($q) {
@@ -146,8 +104,15 @@ class ServiceCatalogService
         if ($ownerId) {
             // لوحة "خدماتي": تُعرض كل حالات صاحب العرض (نشطة/قيد المراجعة/ملغية)
             $query->ownedBy($ownerId);
-        } elseif ($filters['only_active'] ?? true) {
-            $query->approved()->notExpired();
+        } else {
+            // عروض الإدارة الداخلية (broadcast, offer_owner='all') ليست جزءًا من
+            // كتالوج الخدمات العام أبدًا — هي قناة منفصلة بين الإدارة ومزودي الخدمة
+            // (راجع Dashboard\OfferController)، فتُستثنى دائمًا من هذا المسار العام.
+            $query->where('offer_owner', '!=', 'all');
+
+            if ($filters['only_active'] ?? true) {
+                $query->approved()->notExpired();
+            }
         }
 
         $query
@@ -165,10 +130,6 @@ class ServiceCatalogService
         return $query;
     }
 
-    /**
-     * استعلام أساسي محدد الأعمدة + eager loading للعلاقات بأعمدة محدودة فقط،
-     * هذا هو جوهر تجنّب الضغط على قاعدة البيانات.
-     */
     private function baseRelationsQuery()
     {
         return Offer::query()
@@ -181,7 +142,6 @@ class ServiceCatalogService
                 'categories:id,name,name_ar',
                 'zones:id,name,name_ar',
                 'serviceType:id,name',
-                // لا نعرض إلا مزودي الخدمة الذين وافقوا فعليًا (status = accept)
                 'serviceProviders' => function ($q) {
                     $q->select(
                         'users.id', 'users.name', 'users.phone', 'users.snapchat',
@@ -211,7 +171,6 @@ class ServiceCatalogService
             'zone_id'         => $this->normalizeIds($filters['zone_id'] ?? []),
             'service_type_id' => $this->normalizeIds($filters['service_type_id'] ?? []),
             'provider_id'     => $this->normalizeIds($filters['provider_id'] ?? []),
-            // مهم: owner_id يجب أن يكون ضمن المفتاح، حتى لا يشترك مزودو الخدمة بكاش واحد
             'owner_id'        => $filters['owner_id'] ?? null,
             'offer_type'      => $filters['offer_type'] ?? null,
             'min_price'       => $filters['min_price'] ?? null,

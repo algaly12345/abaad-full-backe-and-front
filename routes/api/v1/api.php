@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
 
+use App\Http\Controllers\Api\v1\ServiceManagementController;
+use App\Http\Controllers\Api\v1\ServicePlanManagementController;
+use App\Http\Controllers\Api\v1\ProviderPermissionController;
+use App\Http\Controllers\Api\v1\UserPermissionController;
+
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
     /*
@@ -196,6 +201,28 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('store-offer', [ServiceProvidertController::class, 'storeOfferAPI']);
     });
 
+    // نقطة استرجاع ذاتية للأدوار/الصلاحيات — معزولة في مجموعة خاصة لتجنب
+    // تغيير سلوك المسارات الثلاثة أعلاه دون طلب صريح.
+    Route::group(['prefix' => 'service-provider', 'middleware' => ['auth:api', 'provider.api']], function () {
+        Route::get('permissions', [ProviderPermissionController::class, 'index']);
+    });
+
+
+    Route::group(['prefix' => 'manage-permissions', 'middleware' => 'auth:api'], function () {
+        // عرض كل الصلاحيات الموجودة في النظام
+        Route::get('/', [UserPermissionController::class, 'allPermissions']);
+        
+        // إسناد صلاحية لمستخدم (مثلاً إعطاؤه صلاحية الباقات)
+        Route::post('{id}/assign', [UserPermissionController::class, 'assign']);
+        
+        // سحب صلاحية من مستخدم
+        Route::post('{id}/revoke', [UserPermissionController::class, 'revoke']);
+        
+        // مزامنة الصلاحيات (تحذف القديم وتضع الجديد)
+        Route::post('{id}/sync', [UserPermissionController::class, 'sync']);
+    });
+
+
     /*
     |--------------------------------------------------------------------------
     | Loyalty points (disabled)
@@ -222,19 +249,59 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     |--------------------------------------------------------------------------
     */
     Route::group(['prefix' => 'services'], function () {
-    
+
         // عام: لا يحتاج تسجيل دخول — كتالوج كل الخدمات + بيانات الفلاتر (تشمل قائمة مزودي الخدمة)
         Route::get('/', [ServiceCatalogController::class, 'index']);
         Route::get('filters', [ServiceCatalogController::class, 'filtersData']);
-    
-        // محمي: يحتاج تسجيل دخول (مزود الخدمة) — لوحة "خدماتي" + تفعيل/إيقاف خدمة
-        Route::middleware('auth:api')->group(function () {
-            Route::get('my-services', [ServiceCatalogController::class, 'myServices']);
-            Route::post('{id}/toggle-status', [ServiceCatalogController::class, 'toggleStatus']);
+
+        // محمي: يحتاج تسجيل دخول + صفة "مزود خدمة" فعلية (provider.api)
+        // + صلاحية محددة لكل عملية (provider.permission) — هذه الطبقة الجديدة
+        // هي ما يحول النظام من "كل مزود = كل الصلاحيات" إلى صلاحيات حقيقية.
+        Route::middleware(['auth:api', 'provider.api'])->group(function () {
+            Route::get('my-services', [ServiceCatalogController::class, 'myServices'])
+                ->middleware('provider.permission:services.view');
+
+            Route::post('{id}/toggle-status', [ServiceCatalogController::class, 'toggleStatus'])
+                ->middleware('provider.permission:services.toggle-status');
+
+            Route::post('/', [ServiceManagementController::class, 'store'])
+                ->middleware('provider.permission:services.create');
+
+            Route::put('{id}', [ServiceManagementController::class, 'update'])
+                ->middleware('provider.permission:services.update');
+
+            Route::delete('{id}', [ServiceManagementController::class, 'destroy'])
+                ->middleware('provider.permission:services.delete');
         });
-    
+
         // عام أيضًا: تفاصيل خدمة واحدة — يجب أن يبقى آخر سطر داخل المجموعة
         Route::get('{id}', [ServiceCatalogController::class, 'show']);
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Service Plans (باقات مزودي الخدمة) — CRUD كامل عبر API
+    |--------------------------------------------------------------------------
+    | ⚠️ تنبيه: تم تقييد كل مسارات هذا القسم بصلاحية "plans.manage-global"
+    | التي لا يملكها أي مزود خدمة افتراضيًا (انظر ProviderPermissionsSeeder).
+    | هذا يُغلق الثغرة السابقة (كل مزود كان يستطيع إنشاء/تعديل/حذف باقات
+    | جميع المزودين الآخرين) كأثر جانبي مباشر لبناء نظام الصلاحيات، وذلك
+    | لأن لا يوجد حاليًا حارس API مخصّص لحساب إداري حقيقي (Admin لا يملك
+    | Passport tokens في هذا المشروع). إعادة فتح هذا القسم لفئة إدارية حقيقية
+    | مستقبلاً (مهمة "إدارة الخدمات والباقات") تتطلب منح هذه الصلاحية صريحًا
+    | لذلك الحساب فقط، عبر:
+    |   $user->givePermissionTo(\App\Enums\ProviderPermission::PLANS_MANAGE_GLOBAL);
+    */
+    Route::group([
+        'prefix' => 'service-plans',
+        'middleware' => ['auth:api', 'provider.api', 'provider.permission:plans.manage-global'],
+    ], function () {
+        Route::get('/', [ServicePlanManagementController::class, 'index']);
+        Route::get('{id}', [ServicePlanManagementController::class, 'show']);
+        Route::post('/', [ServicePlanManagementController::class, 'store']);
+        Route::put('{id}', [ServicePlanManagementController::class, 'update']);
+        Route::delete('{id}', [ServicePlanManagementController::class, 'destroy']);
     });
 
 });

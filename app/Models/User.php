@@ -2,25 +2,21 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
+use App\Enums\ProviderRole;
 use App\Traits\AgentTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens,AgentTrait;
+    use HasFactory, Notifiable, HasApiTokens, AgentTrait, HasRoles;
 
-
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    public const TYPE_CUSTOMER = 'customer';
+    public const TYPE_AGENT = 'agent';
+    public const TYPE_PROVIDER = 'provider';
 
     public $timestamps = false;
     protected $fillable = [
@@ -40,52 +36,60 @@ class User extends Authenticatable
         'fal_license_number'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'wallet_balance' => 'float',
         'loyalty_point' => 'integer',
-           'is_phone_verified' => 'integer',
-        
+        'is_phone_verified' => 'integer',
     ];
 
+    /**
+     * نفس موديل User يُستخدم تحت ثلاثة حراس مختلفة (customer / user / api)،
+     * ولا يوجد بينها ترتيب مضمون في config/auth.php يحدد أيها سيُختار افتراضيًا
+     * عند استدعاء دوال Spatie (assignRole, hasPermissionTo, ...).
+     *
+     * نظام الأدوار/الصلاحيات في هذا المشروع مخصص فقط لمزودي الخدمة عبر واجهة
+     * API (حارس api / Passport)، ولا يُستخدم إطلاقًا من جهة العميل أو لوحة
+     * الويب الجلسية. لذلك من الآمن تثبيت الحارس الافتراضي على 'api' دائمًا،
+     * بدل ترك Spatie يحاول تخمينه.
+     */
+    public function getDefaultGuardName(): string
+    {
+        return 'api';
+    }
 
+    /**
+     * فحص سريع ومختصر: هل هذا الحساب مزود خدمة فعليًا (بحسب user_type)؟
+     * هذا لا يتحقق من الأدوار/الصلاحيات؛ فقط نوع الحساب نفسه.
+     */
+    public function isProvider(): bool
+    {
+        return $this->user_type === self::TYPE_PROVIDER;
+    }
 
     public function subscriptions()
-{
-    return $this->hasMany(ServiceProviderSubscription::class);
-}
-
-
+    {
+        return $this->hasMany(ServiceProviderSubscription::class);
+    }
 
     public function provider()
     {
         return $this->hasOne(ServiceProvider::class);
     }
 
-
     public function scopeAgents($q)
     {
-        return $q->where('user_type', 'agent');
+        return $q->where('user_type', self::TYPE_AGENT);
     }
 
     public function scopeProviders($q)
     {
-        return $q->where('user_type', 'provider');
+        return $q->where('user_type', self::TYPE_PROVIDER);
     }
 
     public function zone()
@@ -98,20 +102,15 @@ class User extends Authenticatable
         return $this->hasOne(Agent::class);
     }
 
-
-
-// app/Models/User.php
-
-public function agentss()
-{
-    return $this->hasOne(Agent::class, 'user_id');
-}
+    public function agentss()
+    {
+        return $this->hasOne(Agent::class, 'user_id');
+    }
 
     public function estate()
     {
         return $this->hasMany(Estate::class);
     }
-
 
     public function getStatus()
     {
@@ -127,13 +126,8 @@ public function agentss()
         return $this->belongsToMany(Offer::class)->withPivot('status');
     }
 
-
     public function wishlist()
     {
         return $this->hasMany(Wishlist::class);
     }
-
-
-
-
 }
