@@ -38,9 +38,9 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     Route::group(['prefix' => 'categories'], function () {
         Route::get('/', [CategoryController::class,'get_categories']);
     });
-    
-    
-    
+
+
+
         Route::group(['prefix' => 'provider-subscriptions'], function () {
         Route::get('/', [ServiceProvidertController::class,'index']);
     });
@@ -57,7 +57,7 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
     Route::group(['prefix' => 'estate'], function () {
         Route::get('get-estate/{filter_data}', [EstateController::class,'get_estate']);
-        
+
         Route::get('/get-services', [EstateController::class, 'get_services']);
         Route::get('list/{filter_data}', [EstateController::class, 'list']);
           Route::get('map-list/{filter_data}', [EstateController::class, 'mapList']);
@@ -96,29 +96,29 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 //        Route::post('advantages/selected', [EstateController::class, 'getSelectedAdvantages']);
 
         Route::get('existing-advantages', [EstateController::class, 'getExistingAdvantages']);
-        
-        
-        
+
+
+
          Route::get('validate-advertisement', [EstateController::class, 'validateAdvertisement']);
-          
-          
-          
-          
+
+
+
+
          Route::get('validate-advertisement', [EstateController::class, 'validateAdvertisement']);
 
         Route::post('platform-compliance', [EstateController::class, 'sendComplianceData']);
-        
+
         Route::post('check-license', [EstateController::class, 'check_license']);
 
 
         Route::get('categories-by-type', [EstateController::class, 'getCategoriesByType']);
-        
-        
-        
+
+
+
                 Route::get('search', [EstateController::class, 'search']);
-        
-        
-        
+
+
+
              Route::get('search-list', [ConversationController::class,'get_searched_conversations']);
 
 
@@ -136,12 +136,12 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('cm-firebase-token', [CustomerController::class,'update_cm_firebase_token']);
         Route::get('my-estate', [CustomerController::class,'info_by_id']);
         Route::delete('delete', [CustomerController::class,'delete']);
-        
-        
+
+
            Route::post('nafath-validation', [CustomerController::class,'sendRequest']);
-           
-           
-           
+
+
+
         Route::post('check-request-status', [CustomerController::class,'checkRequestStatus']);
 
     });
@@ -179,17 +179,13 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::put('update', [ServiceProvidertController::class,'update']);
     });
 
-//
-//    Route::group(['prefix'=>'loyalty-point'], function() {
-//        Route::post('point-transfer', 'LoyaltyPointController@point_transfer');
-//        Route::get('transactions', 'LoyaltyPointController@transactions');
-//    });
+
 
 
 
     Route::group(['prefix' => 'banners'], function () {
         Route::get('/',  [BannerController::class,'banners']);
-        
+
         Route::post('advertisement/validate', [EstateController::class, 'validate2']);
 
     });

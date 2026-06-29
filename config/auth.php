@@ -64,6 +64,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'admin-api' => [
+        'driver' => 'passport',
+        'provider' => 'admins',
+    ],
     ],
 
     /*
@@ -98,6 +103,8 @@ return [
             'model' => App\Models\ServiceProvider::class
         ],
 
+
+   
 
 
 
