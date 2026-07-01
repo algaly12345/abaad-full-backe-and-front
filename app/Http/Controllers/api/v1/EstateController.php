@@ -1161,17 +1161,23 @@ public function uploadPlanned(Request $request, $id)
 
 
     public function createReport(Request $request) {
-        // Validate incoming data
+        $validator = Validator::make($request->all(), [
+            'estate_id' => 'required',
+            'reason'    => 'required|string|max:1000',
+        ]);
 
-        $estate = new Report();
-        $estate->title = $request->title;
-        $estate->description =$request->description;
-        $estate->estate_id = $request->estate_id;
+        if ($validator->fails()) {
+            return response()->json(['status' => 422, 'message' => $validator->errors()->first()], 422);
+        }
 
-        $estate->save();
+        $report = new Report();
+        $report->estate_id = $request->estate_id;
+        $report->reason    = $request->reason;
+        $report->save();
+
         $this->sendEstateReportedSMS("503731637", $request->estate_id);
 
-        return response()->json(['message' => 'Estate inserted successfully']);
+        return response()->json(['status' => 200, 'message' => 'تم إرسال البلاغ بنجاح'], 200);
     }
 
 

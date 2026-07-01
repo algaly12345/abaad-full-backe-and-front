@@ -9,5 +9,5 @@ class Report extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'estate_id','user_id'];
+    protected $fillable = ['title', 'description', 'reason', 'estate_id', 'user_id'];
 }
