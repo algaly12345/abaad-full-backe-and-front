@@ -20,12 +20,14 @@ use App\Http\Controllers\Web\Customer\UserProfileController as WebCustomerUserPr
 use App\Http\Controllers\Web\EstateController as WebEstateController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\PageController;
-use App\Http\Controllers\Web\UserProfileController;
+// use App\Http\Controllers\Web\UserProfileController;
 
 use App\Http\Controllers\api\v1\CustomerController;
 
 use App\Http\Controllers\Web\WebController;
 use App\Http\Controllers\Web\WishlistController;
+// use App\Http\Controllers\Customer\Auth\SocialAuthController;
+use App\Http\Controllers\Customer\Auth\ForgotPasswordController;
 use App\Models\EstateImage;
 use App\Models\Offer;
 use Illuminate\Support\Facades\Auth;
@@ -77,7 +79,11 @@ Route::post('/estates/{estate}/transfer-identity', [HomeController::class, 'tran
     ->name('estates.transferIdentity');
 
 
-Route::group(['namespace' => 'Web', 'middleware' => ['guestCheck']], function () {
+    Route::group([
+    'middleware' => ['guestCheck']
+], function () {
+
+// Route::group(['namespace' => 'Web', 'middleware' => ['guestCheck']], function () {
     Route::get('/',  [HomeController::class,'zones'])->name('zones');
     Route::get('home',  [HomeController::class,'index'])->name('home');
 
@@ -153,9 +159,9 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
 
 
 
-    Route::group(['namespace' => 'Customer', 'prefix' => 'customer', 'as' => 'customer.'], function () {
+    Route::group(['prefix' => 'customer', 'as' => 'customer.'], function () {
 
-        Route::group(['namespace' => 'Auth', 'prefix' => 'auth', 'as' => 'auth.'], function () {
+        Route::group(['prefix' => 'auth', 'as' => 'auth.'], function () {
             Route::get('/code/captcha/{tmp}', [ControllersLoginController::class,'captcha'])->name('default-captcha');
             Route::get('login',  [AuthLoginController::class,'login'])->name('login');
             Route::post('login', [AuthLoginController::class,'submit']);
@@ -198,19 +204,19 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
 
 
 
-            Route::get('update-phone/{id}', 'SocialAuthController@editPhone')->name('update-phone');
-            Route::post('update-phone/{id}', 'SocialAuthController@updatePhone');
+            // Route::get('update-phone/{id}', [SocialAuthController::class, 'editPhone'])->name('update-phone');
+            // Route::post('update-phone/{id}', [SocialAuthController::class, 'updatePhone']);
 
-            Route::get('login/{service}', 'SocialAuthController@redirectToProvider')->name('service-login');
-            Route::get('login/{service}/callback', 'SocialAuthController@handleProviderCallback')->name('service-callback');
+            // Route::get('login/{service}', [SocialAuthController::class, 'redirectToProvider'])->name('service-login');
+            // Route::get('login/{service}/callback', [SocialAuthController::class, 'handleProviderCallback'])->name('service-callback');
 
-            Route::get('recover-password', 'ForgotPasswordController@reset_password')->name('recover-password');
-            Route::post('forgot-password', 'ForgotPasswordController@reset_password_request')->name('forgot-password');
-            Route::get('otp-verification', 'ForgotPasswordController@otp_verification')->name('otp-verification');
-            Route::post('otp-verification', 'ForgotPasswordController@otp_verification_submit');
-            Route::get('reset-password', 'ForgotPasswordController@reset_password_index')->name('reset-password');
-            Route::post('reset-password', 'ForgotPasswordController@reset_password_submit');
-            Route::post('resend-otp-reset-password', 'ForgotPasswordController@ajax_resend_otp')->name('resend-otp-reset-password');
+            Route::get('recover-password', [ForgotPasswordController::class, 'reset_password'])->name('recover-password');
+            Route::post('forgot-password', [ForgotPasswordController::class, 'reset_password_request'])->name('forgot-password');
+            Route::get('otp-verification', [ForgotPasswordController::class, 'otp_verification'])->name('otp-verification');
+            Route::post('otp-verification', [ForgotPasswordController::class, 'otp_verification_submit']);
+            Route::get('reset-password', [ForgotPasswordController::class, 'reset_password_index'])->name('reset-password');
+            Route::post('reset-password', [ForgotPasswordController::class, 'reset_password_submit']);
+            Route::post('resend-otp-reset-password', [ForgotPasswordController::class, 'ajax_resend_otp'])->name('resend-otp-reset-password');
         });
 
         // Route::group([], function () {
@@ -234,24 +240,24 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
 
 
 
-    Route::controller(UserProfileController::class)->group(function () {
-        Route::group(['prefix' => 'support-ticket', 'as' => 'support-ticket.'], function () {
-            Route::get('{id}', 'single_ticket')->name('index');
-            Route::post('{id}', 'comment_submit')->name('comment');
-            Route::get('delete/{id}', 'support_ticket_delete')->name('delete');
-            Route::get('close/{id}', 'support_ticket_close')->name('close');
-        });
-    });
+    // Route::controller(UserProfileController::class)->group(function () {
+    //     Route::group(['prefix' => 'support-ticket', 'as' => 'support-ticket.'], function () {
+    //         Route::get('{id}', 'single_ticket')->name('index');
+    //         Route::post('{id}', 'comment_submit')->name('comment');
+    //         Route::get('delete/{id}', 'support_ticket_delete')->name('delete');
+    //         Route::get('close/{id}', 'support_ticket_close')->name('close');
+    //     });
+    // });
 
-    Route::controller(UserProfileController::class)->group(function () {
-        Route::group(['prefix' => 'track-order', 'as' => 'track-order.'], function () {
-            Route::get('', 'track_order')->name('index');
-            Route::get('result-view', 'track_order_result')->name('result-view');
-            Route::get('last', 'track_last_order')->name('last');
-            Route::any('result', 'track_order_result')->name('result');
-            Route::get('order-wise-result-view', 'track_order_wise_result')->name('order-wise-result-view');
-        });
-    });
+    // Route::controller(UserProfileController::class)->group(function () {
+    //     Route::group(['prefix' => 'track-order', 'as' => 'track-order.'], function () {
+    //         Route::get('', 'track_order')->name('index');
+    //         Route::get('result-view', 'track_order_result')->name('result-view');
+    //         Route::get('last', 'track_last_order')->name('last');
+    //         Route::any('result', 'track_order_result')->name('result');
+    //         Route::get('order-wise-result-view', 'track_order_wise_result')->name('order-wise-result-view');
+    //     });
+    // });
 
 
 
@@ -300,7 +306,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
     //         Route::get('/code/captcha/{tmp}', 'captcha')->name('default-captcha');
     //     });
     // });
-});
+}); 
 
 
 
