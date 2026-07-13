@@ -49,7 +49,7 @@ Route::post('change', [LanguageController::class, 'change'])->name('change');
 
 
 Route::get('/admin/auth/login', [LoginController::class,'loginForm'])->name('showLogin');
-Route::post('/admin/auth/login', [LoginController::class,'login'])->name('login');
+Route::post('/admin/auth/login', [LoginController::class,'login'])->name('admin.login');
 
 Route::get('/agent/auth/login', [RoleLoginController::class,'loginForm'])->name('role.showLogin');
 Route::post('/agent/auth/login', [RoleLoginController::class,'login'])->name('role.login');

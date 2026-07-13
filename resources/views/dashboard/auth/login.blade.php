@@ -38,7 +38,7 @@
                         </div>
                         <div class="card-body pt-5">
                             <div class="p-2">
-                                <form class="form-horizontal" action="{{ route('login') }}" method="POST">
+                                <form class="form-horizontal" action="{{ route('admin.login') }}" method="POST">
                                     @csrf
                                     <div class="mb-3">
                                         <label class="form-label" for="username">البريد الالكتروني</label>
