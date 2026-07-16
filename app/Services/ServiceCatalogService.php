@@ -8,6 +8,7 @@ use App\Models\ServiceType;
 use App\Models\Zone;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ServiceCatalogService
 {
@@ -125,9 +126,53 @@ class ServiceCatalogService
             ->discountBetween($filters['min_discount'] ?? null, $filters['max_discount'] ?? null)
             ->search($filters['search'] ?? null);
 
-        $this->applySort($query, $filters['sort_by'] ?? 'latest');
+        $hasDistance = $this->applyDistanceSelection($query, $filters);
+
+        $this->applySort($query, $filters['sort_by'] ?? 'latest', $hasDistance);
 
         return $query;
+    }
+
+    /**
+     * العروض لا تحمل إحداثيات خاصة بها، فقط المناطق (zones.latitude/longitude)
+     * ترتبط بها — لذا "المسافة" هنا تقريبية: أقرب منطقة من مناطق العرض المرتبطة
+     * إلى موقع المستخدم (Haversine بالكيلومتر)، لا مسافة دقيقة لموقع العرض نفسه.
+     * تُضاف كعمود select باسم distance_km يُستخدم لاحقًا في applySort()، وإن
+     * أُرسل radius_km أيضًا تُستبعد العروض التي تتجاوزه (أو بلا مناطق بإحداثيات).
+     */
+    private function applyDistanceSelection($query, array $filters): bool
+    {
+        $lat = $filters['latitude'] ?? null;
+        $lng = $filters['longitude'] ?? null;
+
+        if ($lat === null || $lng === null) {
+            return false;
+        }
+
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+
+        $distanceSubquery = DB::table('offer_zone')
+            ->join('zones', 'zones.id', '=', 'offer_zone.zone_id')
+            ->whereColumn('offer_zone.offer_id', 'offers.id')
+            ->whereNotNull('zones.latitude')
+            ->whereNotNull('zones.longitude')
+            ->selectRaw(
+                'MIN(6371 * ACOS(LEAST(1, GREATEST(-1,
+                    COS(RADIANS(?)) * COS(RADIANS(zones.latitude)) * COS(RADIANS(zones.longitude) - RADIANS(?))
+                    + SIN(RADIANS(?)) * SIN(RADIANS(zones.latitude))
+                ))))',
+                [$lat, $lng, $lat]
+            );
+
+        $query->addSelect(['distance_km' => $distanceSubquery]);
+
+        $radiusKm = $filters['radius_km'] ?? null;
+        if ($radiusKm !== null) {
+            $query->having('distance_km', '<=', (float) $radiusKm);
+        }
+
+        return true;
     }
 
     private function baseRelationsQuery()
@@ -152,8 +197,17 @@ class ServiceCatalogService
             ]);
     }
 
-    private function applySort($query, string $sortBy): void
+    private function applySort($query, string $sortBy, bool $hasDistance = false): void
     {
+        // "الأقرب مني" بلا إحداثيات (لم تُرسَل latitude/longitude) لا معنى له
+        // فيسقط تلقائيًا لترتيب "الأحدث" الافتراضي عبر match أدناه.
+        if ($sortBy === 'nearest' && $hasDistance) {
+            // NULL أولًا يعني: العروض بلا منطقة ذات إحداثيات تُدفع لآخر القائمة
+            // بدل أن تتصدّرها بسبب معاملة NULL كأصغر قيمة في MySQL ASC العادي.
+            $query->orderByRaw('distance_km IS NULL, distance_km ASC');
+            return;
+        }
+
         match ($sortBy) {
             'oldest'        => $query->orderBy('created_at', 'asc'),
             'price_asc'     => $query->orderBy('service_price', 'asc'),
@@ -180,6 +234,10 @@ class ServiceCatalogService
             'search'          => mb_strtolower(trim((string) ($filters['search'] ?? ''))),
             'sort_by'         => $filters['sort_by'] ?? 'latest',
             'only_active'     => (bool) ($filters['only_active'] ?? true),
+            // مقرَّبة لمنعة تفتيت الكاش لكل بكسل حركة GPS، مع بقاء دقة كافية (~110م)
+            'latitude'        => isset($filters['latitude']) ? round((float) $filters['latitude'], 3) : null,
+            'longitude'       => isset($filters['longitude']) ? round((float) $filters['longitude'], 3) : null,
+            'radius_km'       => $filters['radius_km'] ?? null,
             'per_page'        => $perPage,
             'page'            => $page,
         ];

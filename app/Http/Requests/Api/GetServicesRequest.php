@@ -44,7 +44,12 @@ class GetServicesRequest extends FormRequest
 
             'search'              => 'nullable|string|max:150',
 
-            'sort_by'             => 'nullable|string|in:latest,oldest,price_asc,price_desc,discount_desc,expiry_soon',
+            'sort_by'             => 'nullable|string|in:latest,oldest,price_asc,price_desc,discount_desc,expiry_soon,nearest',
+
+            // "الأقرب إليّ" بالفرونت: موقع المستخدم الحالي + نطاق بحث اختياري بالكيلومتر.
+            'latitude'            => 'nullable|numeric|between:-90,90|required_with:longitude',
+            'longitude'           => 'nullable|numeric|between:-180,180|required_with:latitude',
+            'radius_km'           => 'nullable|numeric|min:0.1|max:200',
 
             'only_active'         => 'nullable|boolean',
 

@@ -37,6 +37,11 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('login', [CustomerAuthController::class, 'login']);
         Route::post('verify-phone', [CustomerAuthController::class, 'verify_phone']);
         Route::get('verify', [CustomerAuthController::class, 'all_code']);
+
+        // خطوة "خطة العمل" (عمولة/اشتراك) بعد إنشاء إعلان عقار — يستخدمها تطبيق الجوال.
+        // نفس منطق estate/market-plan، لكن محمي بتوكن المستخدم لأن الفرونت
+        // لا يرسل user_id في الجسم ويعتمد على المستخدم المسجّل دخوله حالياً.
+        Route::post('vendor/business_plan', [EstateController::class, 'market_plan'])->middleware('auth:api');
     });
 
     /*
@@ -207,6 +212,11 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     // نقطة استرجاع ذاتية للأدوار/الصلاحيات — معزولة في مجموعة خاصة لتجنب
     // تغيير سلوك المسارات الثلاثة أعلاه دون طلب صريح.
     Route::group(['prefix' => 'service-provider', 'middleware' => ['auth:api', 'provider.api']], function () {
+        Route::get('permissions', [ProviderPermissionController::class, 'index']);
+    });
+
+    // اسم مسار مطابق لما يستخدمه تطبيق الجوال (provider/permissions بدل service-provider/permissions).
+    Route::group(['prefix' => 'provider', 'middleware' => ['auth:api', 'provider.api']], function () {
         Route::get('permissions', [ProviderPermissionController::class, 'index']);
     });
 

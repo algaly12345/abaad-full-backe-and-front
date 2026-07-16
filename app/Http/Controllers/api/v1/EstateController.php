@@ -679,10 +679,12 @@ $this->sendEstateAddedSMS("503731637", $estate->id);
 
     public function market_plan(Request $request){
         $add_days=0;
-        $estate=Estate::find($request->estate_id);
+        $estateId = $request->estate_id ?? $request->restaurant_id;
+        $estate=Estate::find($estateId);
 
-        $package = SubscriptionPackages::findOrFail($request->package_id);
-        if($request->business_plan == 'subscription' && $request->package_id != null ) {
+        if($request->business_plan == 'subscription' && $request->filled('package_id') ) {
+
+            $package = SubscriptionPackages::findOrFail($request->package_id);
 
             $estate_subscription =   new usersSubscriptions();
 
@@ -693,7 +695,7 @@ $this->sendEstateAddedSMS("503731637", $estate->id);
 
             $estate_subscription->expiry_date= Carbon::now()->addDays($package->validity+$add_days)->format('Y-m-d');
             $estate_subscription->chat=$package->chat;
-            $estate_subscription->user_id =$request->user_id;
+            $estate_subscription->user_id = $request->user_id ?? optional(auth('api')->user())->id;
 
 
 

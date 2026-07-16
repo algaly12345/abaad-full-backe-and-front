@@ -26,6 +26,7 @@ use App\Http\Controllers\api\v1\CustomerController;
 
 use App\Http\Controllers\Web\WebController;
 use App\Http\Controllers\Web\WishlistController;
+use App\Http\Controllers\Web\MoyasarPaymentController;
 use App\Models\EstateImage;
 use App\Models\Offer;
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +76,17 @@ Route::put('/estates/{estate}', [HomeController::class, 'updateEstate'])->name('
 
 Route::post('/estates/{estate}/transfer-identity', [HomeController::class, 'transferIdentity'])
     ->name('estates.transferIdentity');
+
+// صفحتا دفع اشتراك مزود الخدمة عبر Moyasar (تُفتح داخل WebView في تطبيق الجوال).
+// الرابطان موقّعان رقمياً (signed) من ServiceProviderService::createOfferAndSubscription
+// و MoyasarPaymentController::callback، لذلك لا يحتاجان جلسة/توكن مستخدم.
+Route::get('payment/provider-subscription/{subscription}', [MoyasarPaymentController::class, 'show'])
+    ->middleware('signed')
+    ->name('payment.provider-subscription.show');
+
+Route::get('payment/provider-subscription/{subscription}/callback', [MoyasarPaymentController::class, 'callback'])
+    ->middleware('signed')
+    ->name('payment.provider-subscription.callback');
 
 
 Route::group(['namespace' => 'Web', 'middleware' => ['guestCheck']], function () {
