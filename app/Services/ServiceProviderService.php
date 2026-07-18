@@ -64,6 +64,19 @@ class ServiceProviderService
             $duration = (int) $data['subscription_duration'];
             $zonesCount = count($data['zones']);
 
+            // يُحفَظ مرة واحدة داخل service_providers ليُقرَأ لاحقاً من التطبيق
+            // فلا يُطلَب من المزوّد إعادة إدخاله في كل عرض جديد.
+            if (!empty($data['identity_type'])) {
+                $identityUpdates = ['identity_type' => $data['identity_type']];
+                if ($data['identity_type'] === 'individual' && !empty($data['identity_number'])) {
+                    $identityUpdates['identity_number'] = $data['identity_number'];
+                }
+                if ($data['identity_type'] === 'company' && !empty($data['commercial_registration_no'])) {
+                    $identityUpdates['commercial_registration_no'] = $data['commercial_registration_no'];
+                }
+                $user->provider?->update($identityUpdates);
+            }
+
             $pricing = $this->calculatePrice($plan, $duration, $zonesCount);
 
             $serviceType = ServiceType::firstOrCreate(['name' => $data['service_type']]);

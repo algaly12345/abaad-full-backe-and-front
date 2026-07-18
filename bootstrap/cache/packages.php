@@ -56,16 +56,16 @@
       0 => 'Laravel\\Tinker\\TinkerServiceProvider',
     ),
   ),
-  'laravellux/html' => 
+  'laravelcollective/html' => 
   array (
+    'providers' => 
+    array (
+      0 => 'Collective\\Html\\HtmlServiceProvider',
+    ),
     'aliases' => 
     array (
       'Form' => 'Collective\\Html\\FormFacade',
       'Html' => 'Collective\\Html\\HtmlFacade',
-    ),
-    'providers' => 
-    array (
-      0 => 'Collective\\Html\\HtmlServiceProvider',
     ),
   ),
   'matanyadaev/laravel-eloquent-spatial' => 

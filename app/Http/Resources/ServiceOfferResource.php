@@ -22,6 +22,9 @@ class ServiceOfferResource extends JsonResource
             'is_expired'    => $this->expiry_date ? $this->isExpired() : false,
             'status'        => $this->status,
             'owner_id'      => $this->offer_owner,
+            // عمود ديناميكي (addSelect) يُضاف فقط عند إرسال latitude/longitude —
+            // راجع ServiceCatalogService::applyDistanceSelection(). يبقى null بدونه.
+            'distance_km'   => $this->distance_km !== null ? (float) $this->distance_km : null,
 
             'service_type'  => $this->whenLoaded('serviceType', function () {
                 return $this->serviceType ? [

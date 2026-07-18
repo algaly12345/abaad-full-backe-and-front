@@ -31,6 +31,10 @@ class StoreOfferRequest extends FormRequest
             'categories.*' => 'exists:categories,id',
             'zones' => 'required|array|min:1',
             'zones.*' => 'exists:zones,id',
+
+            'identity_type' => 'nullable|in:individual,company',
+            'identity_number' => 'nullable|required_if:identity_type,individual|string',
+            'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
         ];
     }
 
