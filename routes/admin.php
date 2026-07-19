@@ -33,11 +33,11 @@ use App\Http\Controllers\Dashboard\Auth\LoginController;
 
 
 
-// Route::group(['prefix' => 'login'], function () {
-//     Route::get('{loginUrl}', [LoginController::class, 'index']);
-//     Route::get('recaptcha/{tmp}', [LoginController::class, 'generateReCaptcha'])->name('recaptcha');
-//     Route::post('/', [LoginController::class, 'login'])->name('login');
-// });
+Route::group(['prefix' => 'login'], function () {
+    Route::get('/', [LoginController::class, 'index']);
+    Route::get('recaptcha/{tmp}', [LoginController::class, 'generateReCaptcha'])->name('recaptcha');
+    Route::post('/', [LoginController::class, 'login'])->name('login');
+});
 Route::prefix('admin')->middleware(['admin'])->group(function () {
     Route::prefix('/settings/admins')->group(function () {
         Route::get('/', [AdminController::class,'index'])->name('admins.index');
