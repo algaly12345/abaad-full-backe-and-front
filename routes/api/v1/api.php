@@ -200,6 +200,10 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('offer-setup-data', [ServiceProvidertController::class, 'getOfferSetupData']);
         Route::post('calculate-price', [ServiceProvidertController::class, 'calculatePrice']);
         Route::post('store-offer', [ServiceProvidertController::class, 'storeOfferAPI']);
+        // حفظ فوري لبيانات هوية مزوّد الخدمة (فرد/منشأة) من ProviderUpgradeScreen
+        // مباشرة، بدل انتظار إتمام معالج "إضافة خدمة" بالكامل — فلا تُفقَد لو
+        // ترك المستخدم المعالج قبل إكماله.
+        Route::post('update-identity', [ServiceProvidertController::class, 'updateIdentity']);
         Route::get('{subscription_number}/status', [ServiceProvidertController::class, 'getSubscriptionStatus']);
     });
 

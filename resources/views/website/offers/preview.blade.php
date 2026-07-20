@@ -1118,7 +1118,7 @@
                     </div>
                     <div class="card-body">
                         <div class="image-preview">
-                            <img src="{{ asset('storage/' . $data['image']) }}" alt="صورة الخدمة">
+                            <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($data['image']) }}" alt="صورة الخدمة">
                         </div>
                     </div>
                 </div>

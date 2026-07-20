@@ -110,6 +110,40 @@ class ServiceProvidertController extends Controller
     }
 
     /**
+     * POST /api/v1/provider-subscriptions/update-identity
+     * حفظ فوري لبيانات هوية مزوّد الخدمة (فرد/منشأة) — يُستدعى من
+     * ProviderUpgradeScreen مباشرة عند الضغط على "متابعة"، فلا تُفقَد
+     * البيانات لو غادر المستخدم قبل إكمال معالج "إضافة خدمة" بالكامل.
+     */
+    public function updateIdentity(Request $request)
+    {
+        $data = $request->validate([
+            'identity_type' => 'required|in:individual,company',
+            'identity_number' => 'nullable|required_if:identity_type,individual|string',
+            'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
+        ]);
+
+        $user = auth()->user();
+
+        if (! $user->provider) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'لا يوجد ملف مزوّد خدمة مرتبط بهذا الحساب',
+            ], 422);
+        }
+
+        $this->serviceProviderService->updateProviderIdentity($data, $user);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم حفظ بيانات الهوية بنجاح',
+            'data' => $user->provider->fresh()->only([
+                'identity_type', 'identity_number', 'commercial_registration_no',
+            ]),
+        ], 200);
+    }
+
+    /**
      * POST /api/v1/provider-subscriptions/store-offer
      * إنشاء العرض والاشتراك. الرد يحتوي payment_url لفتحه في WebView.
      */

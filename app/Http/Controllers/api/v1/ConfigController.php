@@ -10,6 +10,7 @@ use App\Models\Estate;
 use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Place;
 use Illuminate\Database\Eloquent\Model;
@@ -62,16 +63,16 @@ class ConfigController extends Controller
             'digit_after_decimal_point' =>0,
             'base_urls' => [
                 'estate_image_url' => EstateManager::estate_image_path('estate'),
-                'category_image_url' => asset('storage/app/public/categories'),
-                'customer_image_url' => asset('storage/app/public/profile'),
-                'planed' => asset('storage/app/public/planed'),
-                'review_image_url' => asset('storage/app/public'),
-                'agent_image_url' => asset('storage/app/public/agent'),
-                'activities_image_url' => asset('storage/app/public/activities'),
-                'provider_image_url' => asset('storage/app/public'),
-                'banners' => asset('storage/app/public/banner'),
-                'notification_image_url' => asset('storage/app/public/notification'),
-                'chat_image_url'=> asset('storage/app/public/conversation')
+                'category_image_url' => Storage::disk('public')->url('categories'),
+                'customer_image_url' => Storage::disk('public')->url('profile'),
+                'planed' => Storage::disk('public')->url('planed'),
+                'review_image_url' => Storage::disk('public')->url(''),
+                'agent_image_url' => Storage::disk('public')->url('agent'),
+                'activities_image_url' => Storage::disk('public')->url('activities'),
+                'provider_image_url' => Storage::disk('public')->url(''),
+                'banners' => Storage::disk('public')->url('banner'),
+                'notification_image_url' => Storage::disk('public')->url('notification'),
+                'chat_image_url'=> Storage::disk('public')->url('conversation')
             ],
             'about_us' => Helpers::get_business_settings('about_us'),
             'about_us_ar' => Helpers::get_business_settings('about_us_ar'),

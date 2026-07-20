@@ -5,7 +5,7 @@
 
         <div class="user-wid text-center py-4">
             <div class="user-img">
-                <img src="{{ asset('storage/'.auth()->guard('user')->user()->provider->image) }}" alt="" class="avatar-md mx-auto rounded-circle">
+                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url(auth()->guard('user')->user()->provider->image) }}" alt="" class="avatar-md mx-auto rounded-circle">
             </div>
 
             <div class="mt-3">

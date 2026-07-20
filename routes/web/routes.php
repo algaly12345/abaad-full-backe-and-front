@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\OfferWizardController;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,12 @@ use App\Http\Controllers\OfferWizardController;
 |
 */
 Route::post('change', [LanguageController::class, 'change'])->name('change');
+
+// شبكة أمان: روابط قديمة كانت تُبنى يدوياً بنمط /storage/app/public/{path}
+// تُحوَّل الآن إلى الرابط الفعلي على R2 بدل تعديل كل ملف عرض يستخدم هذا النمط.
+Route::get('/storage/app/public/{path}', function (string $path) {
+    return redirect(Storage::disk('public')->url($path), 301);
+})->where('path', '.*');
 
 
 

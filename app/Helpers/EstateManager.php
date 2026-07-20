@@ -11,9 +11,9 @@ class EstateManager
     {
         $path = '';
         if ($image_type == 'thumbnail') {
-            $path = asset('storage/app/public/product/thumbnail');
+            $path = Storage::disk('public')->url('product/thumbnail');
         } elseif ($image_type == 'estate') {
-            $path = asset('storage/app/public/estate');
+            $path = Storage::disk('public')->url('estate');
         }
         return $path;
     }

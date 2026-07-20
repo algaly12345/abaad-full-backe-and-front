@@ -980,7 +980,7 @@ public function uploadImages(Request $request, $id)
 
         foreach ($request->file('images') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
 
             $imageUrls[] = $imageName;
         }
@@ -1076,7 +1076,7 @@ public function uploadPlanned(Request $request, $id)
 
         foreach ($request->file('planned') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
 
             $imageUrls[] = $imageName;
         }

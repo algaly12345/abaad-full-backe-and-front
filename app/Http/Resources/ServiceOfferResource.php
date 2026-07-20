@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ServiceOfferResource extends JsonResource
 {
@@ -12,7 +13,7 @@ class ServiceOfferResource extends JsonResource
             'id'            => $this->id,
             'title'         => $this->title,
             'description'   => $this->description,
-            'image'         => $this->image ? asset('storage/app/public/' . $this->image) : null,
+            'image'         => $this->image ? Storage::disk('public')->url($this->image) : null,
             'offer_type'    => $this->offer_type,
             'service_price' => $this->service_price !== null ? (float) $this->service_price : null,
             'discount'      => $this->discount !== null ? (float) $this->discount : null,
@@ -59,7 +60,7 @@ class ServiceOfferResource extends JsonResource
                     'website'   => $provider->website,
                     'tiktok'    => $provider->tiktok,
                     'twitter'   => $provider->twitter,
-                    'image'     => $provider->image ? asset('storage/app/public/profile/' . $provider->image) : null,
+                    'image'     => $provider->image ? Storage::disk('public')->url('profile/' . $provider->image) : null,
                 ]);
             }),
 
