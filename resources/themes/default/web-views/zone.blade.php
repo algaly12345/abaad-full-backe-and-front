@@ -434,12 +434,11 @@
                    class="zone-card {{ $index === 0 ? 'zone-featured' : '' }}">
 
                     {{-- الصورة --}}
-                    <img
-                        src="{{ asset('storage/app/public/zone/'.$zone->image) }}"
-                        alt="{{ $zone->name_ar }}"
-                        loading="{{ $index < 3 ? 'eager' : 'lazy' }}"
-                        onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
-
+             <img
+src="{{ $zone->image ? $r2Base.'/zone/'.$zone->image : asset('storage/app/public/zone/default-zone.jpg') }}"
+alt="{{ $zone->name_ar }}"
+loading="{{ $index < 3 ? 'eager' : 'lazy' }}"
+onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
                     {{-- الطبقة الشفافة --}}
                     <div class="zone-overlay"></div>
 
