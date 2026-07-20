@@ -1305,7 +1305,7 @@ $(document).ready(function () {
         let images    = Array.isArray(estate.images) && estate.images.length ? estate.images : ['default'];
         let imageUrls = images.map(p => p === 'default'
             ? '{{ asset("public/assets/images/default-estate.jpg") }}'
-            : `{{ asset('storage/app/public/estate/') }}/${p}`);
+            : `{{ $r2Base }}/estate/${p}`);
 
         let imagesHtml = imageUrls.map((src, i) => `
             <img class="${i === 0 ? 'active' : ''}"
