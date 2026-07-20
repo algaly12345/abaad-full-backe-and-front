@@ -375,21 +375,20 @@
     <div class="carousel-wrap">
         <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
-
-                @foreach($banners as $index => $banner)
-                    <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
-                        <img
-                            src="{{ asset('storage/app/public/banner/'.$banner->image) }}"
-                            class="d-block w-100"
-                            alt="{{ $banner->title }}"
-                            loading="{{ $index == 0 ? 'eager' : 'lazy' }}"
-                            onerror="this.src='{{ asset('storage/app/public/banner/default-banner1.jpg') }}'">
-                        <div class="carousel-caption d-none d-md-block">
-                            <h5>{{ $banner->title }}</h5>
-                            <p>{{ $banner->description }}</p>
-                        </div>
-                    </div>
-                @endforeach
+@foreach($banners as $index => $banner)
+    <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
+        <img
+            src="{{ $banner->image ? $r2Base.'/banners/'.$banner->image : asset('storage/app/public/banner/default-banner1.jpg') }}"
+            class="d-block w-100"
+            alt="{{ $banner->title }}"
+            loading="{{ $index == 0 ? 'eager' : 'lazy' }}"
+            onerror="this.src='{{ asset('storage/app/public/banner/default-banner1.jpg') }}'">
+        <div class="carousel-caption d-none d-md-block">
+            <h5>{{ $banner->title }}</h5>
+            <p>{{ $banner->description }}</p>
+        </div>
+    </div>
+@endforeach
 
                 @if($banners->isEmpty())
                     <div class="carousel-item active">
