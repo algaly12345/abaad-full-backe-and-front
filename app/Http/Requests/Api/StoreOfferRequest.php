@@ -32,6 +32,9 @@ class StoreOfferRequest extends FormRequest
             'zones' => 'required|array|min:1',
             'zones.*' => 'exists:zones,id',
 
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+
             'identity_type' => 'nullable|in:individual,company',
             'identity_number' => 'nullable|required_if:identity_type,individual|string',
             'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
@@ -53,6 +56,8 @@ class StoreOfferRequest extends FormRequest
             'subscription_duration.in' => 'مدة الاشتراك غير صالحة',
             'categories.required' => 'يجب اختيار نوع عقار واحد على الأقل',
             'zones.required' => 'يجب اختيار منطقة واحدة على الأقل',
+            'latitude.required' => 'يجب تحديد موقع الخدمة على الخارطة',
+            'longitude.required' => 'يجب تحديد موقع الخدمة على الخارطة',
         ];
     }
 

@@ -19,6 +19,8 @@ class ServiceOfferResource extends JsonResource
             'discount'      => $this->discount !== null ? (float) $this->discount : null,
             'discount_type' => $this->discount_type,
             'formatted_discount' => $this->formatted_discount,
+            'latitude'      => $this->latitude !== null ? (float) $this->latitude : null,
+            'longitude'     => $this->longitude !== null ? (float) $this->longitude : null,
             'expiry_date'   => $this->expiry_date,
             'is_expired'    => $this->expiry_date ? $this->isExpired() : false,
             'status'        => $this->status,

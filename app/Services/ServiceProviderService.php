@@ -116,6 +116,8 @@ class ServiceProviderService
                 'offer_owner' => 'me',
                 'image' => $image,
                 'phone_provider' => $user->phone ?? '',
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
             ]);
 
             $offer->serviceProviders()->attach($user->id);
