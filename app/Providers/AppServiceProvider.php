@@ -124,7 +124,7 @@ class AppServiceProvider extends ServiceProvider
 
 
 
-
+'r2_public_url' => getWebConfig('r2_public_url'),
 
                         'web_logo' => getWebConfig('company_web_logo'),
                         'mob_logo' => getWebConfig( 'company_mobile_logo'),

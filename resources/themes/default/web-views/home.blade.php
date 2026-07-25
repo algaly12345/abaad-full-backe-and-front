@@ -1,7 +1,11 @@
 @extends('layouts.front-end.app')
 
 @section('title', (request('filter') && request('filter') == 'top-vendors' ? translate('top_Stores') : "كل العقارات"))
-
+@php
+   $r2Base = isset($web_config['r2_public_url'])
+    ? rtrim($web_config['r2_public_url'], '/')
+    : '';
+@endphp
 @push('css_or_js')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -949,6 +953,8 @@ body {
     .mobile-actions-bar { display: none !important; }
 }
 </style>
+
+
 @endpush
 
 @section('content')
@@ -962,10 +968,8 @@ body {
                 {{ translate('all_properties') ?? 'كل العقارات' }}
             </span>
 
-<h1 class="hero-title" style="color: white;">
-    اكتشف العقارات بطريقة أجمل وأكثر احترافية
-</h1>
 
+   
             <p class="hero-desc">
                 تصفح العقارات، استخدم الفلاتر الذكية، وابحث في الخريطة أو حسب الفئة والمنطقة والمدينة والحي بسهولة.
             </p>
@@ -1303,9 +1307,14 @@ $(document).ready(function () {
         const iconSrc    = isFav ? redIcon : defaultIcon;
 
         let images    = Array.isArray(estate.images) && estate.images.length ? estate.images : ['default'];
-        let imageUrls = images.map(p => p === 'default'
-            ? '{{ asset("public/assets/images/default-estate.jpg") }}'
-            : `{{ $r2Base }}/estate/${p}`);
+      let imageUrls = images.map(p => p === 'default'
+    ? '{{ asset("public/assets/images/default-estate.jpg") }}'
+
+
+
+
+
+    : `{{ $r2Base }}/estate/${p}`);
 
         let imagesHtml = imageUrls.map((src, i) => `
             <img class="${i === 0 ? 'active' : ''}"
