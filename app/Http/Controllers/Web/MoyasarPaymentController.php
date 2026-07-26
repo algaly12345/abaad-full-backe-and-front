@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use App\Models\ServiceProviderSubscription;
+use App\Services\ReferralCommissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -82,6 +83,8 @@ class MoyasarPaymentController extends Controller
             if ($subscription->offer_id) {
                 Offer::where('id', $subscription->offer_id)->update(['status' => 'accept']);
             }
+
+            (new ReferralCommissionService())->createCommissionForPaidSubscription($subscription);
 
             return view('payments.result', [
                 'success' => true,

@@ -47,6 +47,20 @@ use Illuminate\Support\Facades\Storage;
 */
 Route::post('change', [LanguageController::class, 'change'])->name('change');
 
+// رابط الإحالة الفعلي (abaadapp.sa/ref/CODE) — انظر ReferralLinkController.
+// النمط يسمح بالشرطة (-) لأن بعض المستخدمين القدامى (قبل توحيد التوليد عبر
+// ReferralController::generateUniqueReferralCode) لديهم أكواد بصيغة قديمة
+// تحتوي شرطة مثل "SP-9361" — رفضها هنا كان يُرجع 404 على روابط حقيقية فعلاً مُستخدَمة.
+Route::get('/ref/{code}', [\App\Http\Controllers\Web\ReferralLinkController::class, 'redirect'])
+    ->where('code', '[A-Za-z0-9\-]+')
+    ->name('referral.link');
+
+Route::get('/.well-known/assetlinks.json', [\App\Http\Controllers\Web\ReferralLinkController::class, 'assetLinks'])
+    ->name('referral.assetlinks');
+
+Route::get('/.well-known/apple-app-site-association', [\App\Http\Controllers\Web\ReferralLinkController::class, 'appleAppSiteAssociation'])
+    ->name('referral.aasa');
+
 // شبكة أمان: روابط قديمة كانت تُبنى يدوياً بنمط /storage/app/public/{path}
 // تُحوَّل الآن إلى الرابط الفعلي على R2 بدل تعديل كل ملف عرض يستخدم هذا النمط.
 Route::get('/storage/app/public/{path}', function (string $path) {

@@ -6,6 +6,7 @@ use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\PhoneOrEmailVerification;
+use App\Models\Referral;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -203,7 +204,27 @@ class CustomerAuthController extends Controller
             'unified_number'=>$request->unified_number,
         ]);
         $user->ref_code = Helpers::generate_referer_code($user);
+
+        // نظام الإحالة: الحقل ref_code القادم من التطبيق (SignUpBody.refCode)
+        // يحمل كود إحالة مزوّد خدمة آخر (وليس كود المستخدم نفسه، والذي مصادفةً
+        // يشترك بنفس الاسم مع عمود users.ref_code القديم أعلاه). نبحث عنه في
+        // users.referral_code الجديد المخصص لنظام الإحالة.
+        $referralCode = trim((string) $request->ref_code);
+        if ($referralCode !== '') {
+            $referrer = User::where('referral_code', $referralCode)->first();
+            if ($referrer && $referrer->id !== $user->id) {
+                $user->referred_by_id = $referrer->id;
+            }
+        }
+
         $user->save();
+
+        if ($user->referred_by_id) {
+            Referral::firstOrCreate(
+                ['referred_id' => $user->id],
+                ['referrer_id' => $user->referred_by_id, 'status' => 'PENDING_PAYMENT']
+            );
+        }
 
         $token = $user->createToken('LaravelAuthApp')->accessToken;
 

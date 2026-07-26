@@ -25,6 +25,8 @@ class User extends Authenticatable
         'phone',
         'password',
         'ref_code',
+        'referral_code',
+        'referred_by_id',
         'is_active',
         'zone_id',
         'user_type',
@@ -80,6 +82,27 @@ class User extends Authenticatable
     public function provider()
     {
         return $this->hasOne(ServiceProvider::class);
+    }
+
+    // ── نظام الإحالة ──────────────────────────────────────────────────────
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by_id');
+    }
+
+    public function referrals()
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    public function commissions()
+    {
+        return $this->hasMany(Commission::class, 'user_id');
+    }
+
+    public function withdrawalRequests()
+    {
+        return $this->hasMany(CommissionWithdrawalRequest::class, 'user_id');
     }
 
     public function scopeAgents($q)

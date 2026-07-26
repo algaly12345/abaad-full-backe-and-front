@@ -1,0 +1,230 @@
+<?php
+
+namespace App\Http\Controllers\api\v1;
+
+use App\Helpers\Helpers;
+use App\Http\Controllers\Controller;
+use App\Models\Commission;
+use App\Models\CommissionWithdrawalRequest;
+use App\Models\Referral;
+use App\Models\ReferralSetting;
+use App\Models\User;
+use App\Models\WalletTransaction;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+
+class ReferralController extends Controller
+{
+    /**
+     * كود/رابط الإحالة الخاص بمزوّد الخدمة الحالي — يُولَّد عند أول طلب إن لم
+     * يكن موجودًا. 10 أحرف بالضبط لتوافق التحقق الموجود في تطبيق الجوال.
+     */
+    public function myLink(Request $request)
+    {
+        $user = $request->user();
+
+        if (empty($user->referral_code)) {
+            $user->referral_code = $this->generateUniqueReferralCode();
+            $user->save();
+        }
+
+        // نفس النطاق الذي يستمع له تطبيق الجوال في MyApp._handleReferralLink (main.dart).
+        $referralLink = "https://abaadapp.sa/ref/{$user->referral_code}";
+
+        return response()->json([
+            'referral_code' => $user->referral_code,
+            'referral_link' => $referralLink,
+            'share_text' => "سجّل في تطبيق أبعاد عبر رابط الإحالة الخاص بي: {$referralLink}",
+        ], 200);
+    }
+
+    /**
+     * قائمة المُحالين من طرف المستخدم الحالي: اسم مزود الخدمة، الباقة، قيمة
+     * العملية، المكافأة، حالتها، وتاريخ توفرها للسحب.
+     */
+    public function index(Request $request)
+    {
+        $referrals = Referral::with(['referred:id,name,phone', 'commission'])
+            ->where('referrer_id', $request->user()->id)
+            ->latest('id')
+            ->get();
+
+        $data = $referrals->map(function (Referral $referral) {
+            $commission = $referral->commission;
+            $subscription = $commission
+                ? \App\Models\ServiceProviderSubscription::where('user_id', $referral->referred_id)
+                    ->where('payment_status', 'paid')
+                    ->with('servicePlan:id,name')
+                    ->latest('id')
+                    ->first()
+                : null;
+
+            return [
+                'referred_name' => $referral->referred->name ?? null,
+                'referred_phone' => $referral->referred->phone ?? null,
+                'package_name' => $subscription->servicePlan->name ?? null,
+                'transaction_amount' => $subscription ? (float) $subscription->price : null,
+                'commission_amount' => $commission->amount ?? null,
+                'commission_status' => $commission->status ?? null,
+                'referral_status' => $referral->status,
+                'available_at' => $commission->available_at ?? null,
+                'created_at' => $referral->created_at,
+            ];
+        });
+
+        return response()->json(['data' => $data], 200);
+    }
+
+    /**
+     * إجماليات المكافآت حسب الحالة، لعرضها في لوحة المسوّق.
+     */
+    public function summary(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $totals = Commission::where('user_id', $userId)
+            ->selectRaw('status, SUM(amount) as total, COUNT(*) as count')
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status');
+
+        $availableBalance = $this->availableCommissionBalance($userId);
+
+        return response()->json([
+            'referred_count' => Referral::where('referrer_id', $userId)->count(),
+            'pending_total' => (float) ($totals['PENDING']->total ?? 0),
+            'approved_total' => (float) ($totals['APPROVED']->total ?? 0),
+            'available_total' => (float) ($totals['AVAILABLE']->total ?? 0),
+            'withdrawn_total' => (float) ($totals['WITHDRAWN']->total ?? 0),
+            'available_balance' => $availableBalance,
+        ], 200);
+    }
+
+    /**
+     * طلب سحب الرصيد المتاح. يُخصم فورًا من الرصيد المتاح كـ"محجوز" بحالة
+     * pending. صرف/رفض الطلب من طرف الإدارة خارج نطاق هذا الإصدار.
+     */
+    public function requestWithdrawal(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+
+        $user = $request->user();
+        $amount = (float) $request->amount;
+        $settings = ReferralSetting::current();
+
+        if ($settings->min_payout_limit > 0 && $amount < $settings->min_payout_limit) {
+            return response()->json([
+                'errors' => [['code' => 'withdrawal-002', 'message' => 'المبلغ أقل من الحد الأدنى للسحب']],
+            ], 403);
+        }
+
+        // معاملة + قفل صفوف العمولات المتاحة لهذا المستخدم: بدونها، طلبا سحب
+        // متزامنان (ضغط مزدوج على الزر، أو محاولة متعمّدة) قد يقرآن نفس
+        // الرصيد المتاح قبل أن يكتب أي منهما، فيسمحان معًا بسحب أكبر من
+        // الرصيد الفعلي (double-spend).
+        $result = DB::transaction(function () use ($user, $amount) {
+            $available = $this->lockedAvailableCommissionBalance($user->id);
+
+            if ($amount > $available) {
+                return ['error' => true];
+            }
+
+            $withdrawal = CommissionWithdrawalRequest::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'status' => 'pending',
+                'requested_at' => now(),
+            ]);
+
+            $lastBalance = (float) (WalletTransaction::where('user_id', $user->id)->latest('id')->value('balance') ?? 0);
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'transaction_id' => (string) Str::uuid(),
+                'credit' => 0,
+                'debit' => $amount,
+                'admin_bonus' => 0,
+                'balance' => round($lastBalance - $amount, 3),
+                'transaction_type' => 'referral_withdrawal_request',
+                'reference' => 'withdrawal:' . $withdrawal->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return ['error' => false, 'withdrawal' => $withdrawal];
+        });
+
+        if ($result['error']) {
+            return response()->json([
+                'errors' => [['code' => 'withdrawal-001', 'message' => 'المبلغ المطلوب أكبر من الرصيد المتاح للسحب']],
+            ], 403);
+        }
+
+        return response()->json(['data' => $result['withdrawal']], 201);
+    }
+
+    public function withdrawals(Request $request)
+    {
+        $withdrawals = CommissionWithdrawalRequest::where('user_id', $request->user()->id)
+            ->latest('id')
+            ->get();
+
+        return response()->json(['data' => $withdrawals], 200);
+    }
+
+    /**
+     * الرصيد المتاح فعليًا لسحب مكافآت الإحالة: مجموع العمولات AVAILABLE،
+     * ناقص أي طلبات سحب سابقة لم تُرفض بعد. مُتعمّد عدم استخدام العمود
+     * wallet_transactions.balance مباشرة هنا لأنه سجل مشترك يشمل مصادر أخرى
+     * (نقاط الولاء، مكافآت الإدارة)، فلا يعكس بدقة الرصيد القابل للسحب من
+     * عمولات الإحالة تحديدًا.
+     */
+    private function availableCommissionBalance(int $userId): float
+    {
+        $availableCommissions = (float) Commission::where('user_id', $userId)
+            ->where('status', Commission::STATUS_AVAILABLE)
+            ->sum('amount');
+
+        $reservedWithdrawals = (float) CommissionWithdrawalRequest::where('user_id', $userId)
+            ->whereIn('status', ['pending', 'approved', 'paid'])
+            ->sum('amount');
+
+        return max(0, round($availableCommissions - $reservedWithdrawals, 2));
+    }
+
+    /**
+     * نفس حساب availableCommissionBalance لكن بقفل صفوف (lockForUpdate) —
+     * يُستخدم فقط داخل معاملة DB::transaction في requestWithdrawal لمنع
+     * سباق طلبي سحب متزامنين لنفس المستخدم من سحب أكثر من الرصيد الفعلي.
+     */
+    private function lockedAvailableCommissionBalance(int $userId): float
+    {
+        $availableCommissions = (float) Commission::where('user_id', $userId)
+            ->where('status', Commission::STATUS_AVAILABLE)
+            ->lockForUpdate()
+            ->sum('amount');
+
+        $reservedWithdrawals = (float) CommissionWithdrawalRequest::where('user_id', $userId)
+            ->whereIn('status', ['pending', 'approved', 'paid'])
+            ->lockForUpdate()
+            ->sum('amount');
+
+        return max(0, round($availableCommissions - $reservedWithdrawals, 2));
+    }
+
+    private function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = 'SP' . strtoupper(Str::random(8));
+        } while (User::where('referral_code', $code)->exists());
+
+        return $code;
+    }
+}

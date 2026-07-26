@@ -23,6 +23,10 @@
         <env name="CACHE_DRIVER" value="array"/>
         <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
         <!-- <env name="DB_DATABASE" value=":memory:"/> -->
+        <!-- قاعدة بيانات معزولة مخصّصة للاختبارات فقط — لا تلمس أبدًا
+             abaadapp_abaad_pdm الفعلية. RefreshDatabase يشغّل migrate:fresh
+             (يحذف كل الجداول) على القاعدة المحدَّدة هنا عند أول تشغيل. -->
+        <env name="DB_DATABASE" value="abaadapp_abaad_pdm_testing"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

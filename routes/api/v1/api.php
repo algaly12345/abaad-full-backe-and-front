@@ -11,6 +11,7 @@ use App\Http\Controllers\api\v1\CustomerController;
 use App\Http\Controllers\api\v1\EstateController;
 use App\Http\Controllers\Api\v1\EstateSearchController;
 use App\Http\Controllers\api\v1\NotificationController;
+use App\Http\Controllers\api\v1\ReferralController;
 use App\Http\Controllers\api\v1\ServiceProvidertController;
 use App\Http\Controllers\api\v1\WalletController;
 use App\Http\Controllers\api\v1\WishlistController;
@@ -183,6 +184,19 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     */
     Route::group(['prefix' => 'wallet', 'middleware' => 'auth:api'], function () {
         Route::get('transactions', [WalletController::class, 'transactions']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | نظام مكافآت الإحالة (المسوّق = أي مزوّد خدمة حالي)
+    |--------------------------------------------------------------------------
+    */
+    Route::group(['prefix' => 'referrals', 'middleware' => ['auth:api', 'provider.api']], function () {
+        Route::get('my-link', [ReferralController::class, 'myLink']);
+        Route::get('/', [ReferralController::class, 'index']);
+        Route::get('summary', [ReferralController::class, 'summary']);
+        Route::post('withdrawals', [ReferralController::class, 'requestWithdrawal']);
+        Route::get('withdrawals', [ReferralController::class, 'withdrawals']);
     });
 
     /*

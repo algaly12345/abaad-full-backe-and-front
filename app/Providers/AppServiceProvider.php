@@ -26,8 +26,10 @@ use App\Models\Tag;
 use App\Models\FlashDeal;
 use App\Models\Offer;
 use App\Models\Product;
+use App\Models\ServiceProviderSubscription;
 use App\Models\User;
 use App\Observers\OfferObserver;
+use App\Observers\ServiceProviderSubscriptionObserver;
 use App\Observers\UserObserver;
 use App\Traits\AddonHelper;
 use App\Traits\ThemeHelper;
@@ -93,6 +95,11 @@ class AppServiceProvider extends ServiceProvider
         // للتنبيه حول استعلامات DB::table() الخام التي تتجاوز هذا الحدث).
         if (class_exists(UserObserver::class)) {
             User::observe(UserObserver::class);
+        }
+
+        // إلغاء عمولة الإحالة تلقائيًا عند استرجاع/إلغاء دفع اشتراك مُحال.
+        if (class_exists(ServiceProviderSubscriptionObserver::class)) {
+            ServiceProviderSubscription::observe(ServiceProviderSubscriptionObserver::class);
         }
 
 
