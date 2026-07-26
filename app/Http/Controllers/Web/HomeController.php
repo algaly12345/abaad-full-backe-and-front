@@ -436,9 +436,11 @@ public function handle(Request $request): JsonResponse
 
         $main_banner = $this->banner->latest()->get();
 
-   DB::table('users')
-                ->where('id',  auth('customer')->user()->id ??"" )
-                ->update(['is_phone_verified' => 0]);
+if (auth('customer')->check()) {
+    DB::table('users')
+        ->where('id', auth('customer')->user()->id)
+        ->update(['is_phone_verified' => 0]);
+}
 
 
         return view(  VIEW_FILE_NAMES['home'],
@@ -536,10 +538,11 @@ public function handle(Request $request): JsonResponse
    $current_date = date('Y-m-d H:i:s');
 
    $main_banner = $this->banner->latest()->get();
-
-DB::table('users')
-           ->where('id',  auth('customer')->user()->id ??"" )
-           ->update(['is_phone_verified' => 0]);
+if (auth('customer')->check()) {
+    DB::table('users')
+        ->where('id', auth('customer')->user()->id)
+        ->update(['is_phone_verified' => 0]);
+}
 
 
    return view(  VIEW_FILE_NAMES['home'],
