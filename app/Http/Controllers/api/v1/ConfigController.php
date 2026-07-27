@@ -52,7 +52,7 @@ class ConfigController extends Controller
         return response()->json([
             'business_name' => BusinessSetting::where('type', 'company_name')->first()->value,
             'logo' => optional(
-    BusinessSetting::where('type','company_mobile_logo')->first()
+              BusinessSetting::where('type','company_mobile_logo')->first()
 )->value,
             'address' => BusinessSetting::where('type', 'company_phone')->first()->value,
             'phone' => BusinessSetting::where('type', 'company_phone')->first()->value,
