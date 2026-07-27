@@ -51,7 +51,9 @@ class ConfigController extends Controller
         ];
         return response()->json([
             'business_name' => BusinessSetting::where('type', 'company_name')->first()->value,
-            'logo' => BusinessSetting::where('type', 'company_mobile_logo')->first()->value,
+            'logo' => optional(
+    BusinessSetting::where('type','company_mobile_logo')->first()
+)->value,
             'address' => BusinessSetting::where('type', 'company_phone')->first()->value,
             'phone' => BusinessSetting::where('type', 'company_phone')->first()->value,
             'email' => BusinessSetting::where('type', 'company_email')->first()->value,
@@ -66,10 +68,11 @@ class ConfigController extends Controller
                 'category_image_url' => Storage::disk('public')->url('categories'),
                 'customer_image_url' => Storage::disk('public')->url('profile'),
                 'planed' => Storage::disk('public')->url('planed'),
-                'review_image_url' => Storage::disk('public')->url(''),
+               'review_image_url' => Storage::disk('public')->url('reviews'),
+
                 'agent_image_url' => Storage::disk('public')->url('agent'),
                 'activities_image_url' => Storage::disk('public')->url('activities'),
-                'provider_image_url' => Storage::disk('public')->url(''),
+               'provider_image_url' => Storage::disk('public')->url('providers'),
                 'banners' => Storage::disk('public')->url('banner'),
                 'notification_image_url' => Storage::disk('public')->url('notification'),
                 'chat_image_url'=> Storage::disk('public')->url('conversation')

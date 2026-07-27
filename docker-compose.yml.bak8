@@ -20,12 +20,11 @@ services:
       DB_DATABASE: abaadapp_abaad_pdm
       DB_USERNAME: root
       DB_PASSWORD: ""
-      FILESYSTEM_DISK: public
       AWS_ACCESS_KEY_ID: dummy
       AWS_SECRET_ACCESS_KEY: dummy
       AWS_DEFAULT_REGION: us-east-1
       AWS_BUCKET: dummy
-      AWS_ENDPOINT: http://127.0.0.1:1
+      AWS_ENDPOINT: https://dummy.s3.amazonaws.com
       AWS_USE_PATH_STYLE_ENDPOINT: "false"
 
       CACHE_DRIVER: redis
