@@ -145,6 +145,10 @@ if (!function_exists('getWebConfig')) {
     }
     function fileCheck($disk, $path): bool
     {
-        return Storage::disk($disk)->exists($path);
+        try {
+            return Storage::disk($disk)->exists($path);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }
