@@ -39,6 +39,9 @@ class CustomerController extends Controller
     {
         $data = $request->user();
         $data['userinfo'] = $data->agent;
+        if ($data->user_type === 'provider') {
+            $data['provider'] = $data->provider;
+        }
         $data['estate_count'] =(integer)$request->user()->estate->count();
 //       $data['member_since_days'] =(integer)$request->user()->created_at->diffInDays();
           unset($data['estate']);

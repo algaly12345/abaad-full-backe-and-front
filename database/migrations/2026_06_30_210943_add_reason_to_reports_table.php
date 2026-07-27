@@ -13,19 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('support_tickets', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('reports', function (Blueprint $table) {
+            $table->text('reason')->nullable()->after('estate_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down()
     {
-        Schema::dropIfExists('support_tickets');
+        Schema::table('reports', function (Blueprint $table) {
+            $table->dropColumn('reason');
+        });
     }
 };

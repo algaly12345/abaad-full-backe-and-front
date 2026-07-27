@@ -118,7 +118,7 @@ if (!function_exists('getWebConfig')) {
             if (fileCheck(disk: 'public', path: $path . '/' . $data) && !empty($data)) {
                 return [
                     'key' => $data,
-                    'path' => asset('storage/app/public') . '/' . $path . '/' . $data,
+                    'path' => Storage::disk('public')->url($path . '/' . $data),
                     'status' => 200,
                 ];
             }
@@ -138,7 +138,7 @@ if (!function_exists('getWebConfig')) {
             }
         } else {
             if (fileCheck(disk: 'public', path: $path) ) {
-                return asset('storage/app/public') . '/' . $path;
+                return Storage::disk('public')->url($path);
             }
         }
         return null;

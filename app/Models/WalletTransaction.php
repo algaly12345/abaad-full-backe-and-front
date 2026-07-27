@@ -11,6 +11,19 @@ class WalletTransaction extends Model
 
     public $timestamps = false;
 
+    protected $fillable = [
+        'user_id',
+        'transaction_id',
+        'credit',
+        'debit',
+        'admin_bonus',
+        'balance',
+        'transaction_type',
+        'reference',
+        'created_at',
+        'updated_at',
+    ];
+
     protected $casts = [
         'user_id' => 'integer',
         'credit' => 'float',

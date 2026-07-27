@@ -679,10 +679,12 @@ $this->sendEstateAddedSMS("503731637", $estate->id);
 
     public function market_plan(Request $request){
         $add_days=0;
-        $estate=Estate::find($request->estate_id);
+        $estateId = $request->estate_id ?? $request->restaurant_id;
+        $estate=Estate::find($estateId);
 
-        $package = SubscriptionPackages::findOrFail($request->package_id);
-        if($request->business_plan == 'subscription' && $request->package_id != null ) {
+        if($request->business_plan == 'subscription' && $request->filled('package_id') ) {
+
+            $package = SubscriptionPackages::findOrFail($request->package_id);
 
             $estate_subscription =   new usersSubscriptions();
 
@@ -693,7 +695,7 @@ $this->sendEstateAddedSMS("503731637", $estate->id);
 
             $estate_subscription->expiry_date= Carbon::now()->addDays($package->validity+$add_days)->format('Y-m-d');
             $estate_subscription->chat=$package->chat;
-            $estate_subscription->user_id =$request->user_id;
+            $estate_subscription->user_id = $request->user_id ?? optional(auth('api')->user())->id;
 
 
 
@@ -978,7 +980,7 @@ public function uploadImages(Request $request, $id)
 
         foreach ($request->file('images') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
 
             $imageUrls[] = $imageName;
         }
@@ -1074,7 +1076,7 @@ public function uploadPlanned(Request $request, $id)
 
         foreach ($request->file('planned') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
 
             $imageUrls[] = $imageName;
         }
@@ -1161,17 +1163,23 @@ public function uploadPlanned(Request $request, $id)
 
 
     public function createReport(Request $request) {
-        // Validate incoming data
+        $validator = Validator::make($request->all(), [
+            'estate_id' => 'required',
+            'reason'    => 'required|string|max:1000',
+        ]);
 
-        $estate = new Report();
-        $estate->title = $request->title;
-        $estate->description =$request->description;
-        $estate->estate_id = $request->estate_id;
+        if ($validator->fails()) {
+            return response()->json(['status' => 422, 'message' => $validator->errors()->first()], 422);
+        }
 
-        $estate->save();
+        $report = new Report();
+        $report->estate_id = $request->estate_id;
+        $report->reason    = $request->reason;
+        $report->save();
+
         $this->sendEstateReportedSMS("503731637", $request->estate_id);
 
-        return response()->json(['message' => 'Estate inserted successfully']);
+        return response()->json(['status' => 200, 'message' => 'تم إرسال البلاغ بنجاح'], 200);
     }
 
 

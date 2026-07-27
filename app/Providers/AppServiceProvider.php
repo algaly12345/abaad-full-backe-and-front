@@ -24,7 +24,13 @@ use App\Models\SocialMedia;
 use App\Models\Tag;
 
 use App\Models\FlashDeal;
+use App\Models\Offer;
 use App\Models\Product;
+use App\Models\ServiceProviderSubscription;
+use App\Models\User;
+use App\Observers\OfferObserver;
+use App\Observers\ServiceProviderSubscriptionObserver;
+use App\Observers\UserObserver;
 use App\Traits\AddonHelper;
 use App\Traits\ThemeHelper;
 use App\Utils\ProductManager;
@@ -75,9 +81,28 @@ class AppServiceProvider extends ServiceProvider
     {
 
 
+        if (class_exists(\App\Observers\EstateObserver::class)) {
+            \App\Models\Estate::observe(\App\Observers\EstateObserver::class);
+        }
+
+        if (class_exists(\App\Observers\OfferObserver::class)) {
+            Offer::observe(OfferObserver::class);
+        }
+
+        // نظام صلاحيات مزودي الخدمة: ربط دور provider تلقائيًا بأي حساب
+        // user_type=provider عند الإنشاء أو التحديث (انظر تعليقات UserObserver
+        // للتنبيه حول استعلامات DB::table() الخام التي تتجاوز هذا الحدث).
+        if (class_exists(UserObserver::class)) {
+            User::observe(UserObserver::class);
+        }
+
+        // إلغاء عمولة الإحالة تلقائيًا عند استرجاع/إلغاء دفع اشتراك مُحال.
+        if (class_exists(ServiceProviderSubscriptionObserver::class)) {
+            ServiceProviderSubscription::observe(ServiceProviderSubscriptionObserver::class);
+        }
+
         \Illuminate\Support\Facades\URL::forceScheme('https');
 
-        
         if (!App::runningInConsole()) {
             Paginator::useBootstrap();
 

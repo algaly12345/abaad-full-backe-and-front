@@ -249,7 +249,7 @@ public function get_details($id)
             if ($request->hasFile('estate_image')) {
                 foreach ($request->file('estate_image') as $image) {
                     $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->storeAs('public/estate', $imageName);
+                    $image->storeAs('estate', $imageName, 'public');
                     $estateImages[] = $imageName;
                 }
             }
@@ -257,7 +257,7 @@ public function get_details($id)
             if ($request->hasFile('planned_image')) {
                 foreach ($request->file('planned_image') as $image) {
                     $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->storeAs('public/estate', $imageName);
+                    $image->storeAs('estate', $imageName, 'public');
                     $plannedImages[] = $imageName;
                 }
             }

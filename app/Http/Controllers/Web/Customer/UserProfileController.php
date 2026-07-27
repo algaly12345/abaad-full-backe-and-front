@@ -384,7 +384,7 @@ class UserProfileController extends Controller
 
         foreach ($request->file('estate_image') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
             $imageUrls[] = $imageName;
         }
 
@@ -419,7 +419,7 @@ public function uploadPlanned(Request $request, $id)
 
         foreach ($request->file('planned_image') as $imageFile) {
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
-            $imageFile->storeAs('public/estate', $imageName);
+            $imageFile->storeAs('estate', $imageName, 'public');
             $imageUrls[] = $imageName;
         }
 
@@ -502,7 +502,7 @@ public function deleteImage($id, $imageUrl)
 
     if ($index !== false) {
         // حذف الملف من التخزين
-        Storage::delete('public/estate/' . $imageUrl);
+        Storage::disk('public')->delete('estate/' . $imageUrl);
 
         array_splice($imagePaths, $index, 1);
         $images->update(['images' => json_encode($imagePaths)]);
@@ -534,7 +534,7 @@ public function deletePlanned($id, $imageUrl)
 
     if ($index !== false) {
         // حذف الملف من التخزين
-        Storage::delete('public/estate/' . $imageUrl);
+        Storage::disk('public')->delete('estate/' . $imageUrl);
 
         array_splice($imagePaths, $index, 1);
         $images->update(['planned' => json_encode($imagePaths)]);

@@ -28,12 +28,14 @@ use App\Http\Controllers\Web\WebController;
 use App\Http\Controllers\Web\WishlistController;
 // use App\Http\Controllers\Customer\Auth\SocialAuthController;
 use App\Http\Controllers\Customer\Auth\ForgotPasswordController;
+use App\Http\Controllers\Web\MoyasarPaymentController;
 use App\Models\EstateImage;
 use App\Models\Offer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\OfferWizardController;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +48,26 @@ use App\Http\Controllers\OfferWizardController;
 |
 */
 Route::post('change', [LanguageController::class, 'change'])->name('change');
+
+// رابط الإحالة الفعلي (abaadapp.sa/ref/CODE) — انظر ReferralLinkController.
+// النمط يسمح بالشرطة (-) لأن بعض المستخدمين القدامى (قبل توحيد التوليد عبر
+// ReferralController::generateUniqueReferralCode) لديهم أكواد بصيغة قديمة
+// تحتوي شرطة مثل "SP-9361" — رفضها هنا كان يُرجع 404 على روابط حقيقية فعلاً مُستخدَمة.
+Route::get('/ref/{code}', [\App\Http\Controllers\Web\ReferralLinkController::class, 'redirect'])
+    ->where('code', '[A-Za-z0-9\-]+')
+    ->name('referral.link');
+
+Route::get('/.well-known/assetlinks.json', [\App\Http\Controllers\Web\ReferralLinkController::class, 'assetLinks'])
+    ->name('referral.assetlinks');
+
+Route::get('/.well-known/apple-app-site-association', [\App\Http\Controllers\Web\ReferralLinkController::class, 'appleAppSiteAssociation'])
+    ->name('referral.aasa');
+
+// شبكة أمان: روابط قديمة كانت تُبنى يدوياً بنمط /storage/app/public/{path}
+// تُحوَّل الآن إلى الرابط الفعلي على R2 بدل تعديل كل ملف عرض يستخدم هذا النمط.
+Route::get('/storage/app/public/{path}', function (string $path) {
+    return redirect(Storage::disk('public')->url($path), 301);
+})->where('path', '.*');
 
 
 
@@ -77,6 +99,17 @@ Route::put('/estates/{estate}', [HomeController::class, 'updateEstate'])->name('
 
 Route::post('/estates/{estate}/transfer-identity', [HomeController::class, 'transferIdentity'])
     ->name('estates.transferIdentity');
+
+// صفحتا دفع اشتراك مزود الخدمة عبر Moyasar (تُفتح داخل WebView في تطبيق الجوال).
+// الرابطان موقّعان رقمياً (signed) من ServiceProviderService::createOfferAndSubscription
+// و MoyasarPaymentController::callback، لذلك لا يحتاجان جلسة/توكن مستخدم.
+Route::get('payment/provider-subscription/{subscription}', [MoyasarPaymentController::class, 'show'])
+    ->middleware('signed')
+    ->name('payment.provider-subscription.show');
+
+Route::get('payment/provider-subscription/{subscription}/callback', [MoyasarPaymentController::class, 'callback'])
+    ->middleware('signed')
+    ->name('payment.provider-subscription.callback');
 
 
     Route::group([
@@ -169,7 +202,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
             Route::get('get-login-modal-data', [AuthLoginController::class,'get_login_modal_data'])->name('get-login-modal-data');
 
             Route::get('sign-up',  [RegisterController::class,'register'])->name('sign-up');
-//             Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up');
+            Route::post('sign-up',   [RegisterController::class,'submit'])->name('sign-up.submit');
             Route::post('sign-up3',   [RegisterController::class,'submit'])->name('sign-up3');
 
              Route::post('sign-provider',   [RegisterController::class,'submit_provider'])->name('sign-provider');
@@ -467,7 +500,7 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
 // });
 
 Route::prefix('/video')->group(function () {
-    Route::get('/', [VideoController::class,'create'])->name('home.create');
+    Route::get('/', [VideoController::class,'create'])->name('video.create');
     Route::post('video-upload', [ VideoController::class, 'uploadVideo' ])->name('store.video');
 
 

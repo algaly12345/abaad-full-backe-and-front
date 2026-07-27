@@ -27,19 +27,22 @@ class ImageManager
             // إذا لم تكن الصورة في التنسيق المطلوب، قم بتحويلها
             if (!in_array($originalExtension, ['gif', 'svg']) && $originalExtension !== $format) {
                 $convertedImageName = Carbon::now()->toDateString() . "-" . uniqid() . "." . $format;
-                $imagePath = Storage::disk($storage)->path($dir . $convertedImageName);
 
-                // تحويل الصورة إلى التنسيق المطلوب باستخدام GD
+                // تحويل الصورة إلى التنسيق المطلوب باستخدام GD (في الذاكرة، بدون الاعتماد على مسار محلي)
                 $sourceImage = imagecreatefromstring(file_get_contents($image));
+                ob_start();
                 if ($format == 'webp') {
-                    imagewebp($sourceImage, $imagePath, 90);
+                    imagewebp($sourceImage, null, 90);
                 } elseif ($format == 'jpeg' || $format == 'jpg') {
-                    imagejpeg($sourceImage, $imagePath, 90);
+                    imagejpeg($sourceImage, null, 90);
                 } elseif ($format == 'png') {
-                    imagepng($sourceImage, $imagePath);
+                    imagepng($sourceImage);
                 }
+                $convertedImageData = ob_get_clean();
 
                 imagedestroy($sourceImage);
+
+                Storage::disk($storage)->put($dir . $convertedImageName, $convertedImageData);
 
                 // حذف الصورة الأصلية إذا لزم الأمر
                 Storage::disk($storage)->delete($dir . $imageName);

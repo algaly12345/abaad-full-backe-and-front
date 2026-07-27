@@ -24,8 +24,8 @@ use App\Http\Controllers\SharedController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Dashboard\Auth\LoginController;
-
-
+use App\Http\Controllers\Dashboard\ReportController;
+use App\Http\Controllers\Dashboard\ServicePlanController;
 
 
 
@@ -195,12 +195,42 @@ Route::post('/service-provider/offers/{offer}/toggle-status', [OfferController::
 
 
     Route::prefix('/business-settings')->group(function () {
-        Route::get('/', [EstateController::class,'index'])->name('estate.index');
-        Route::get('/create', [EstateController::class,'create'])->name('estate.create');
-        Route::post('store', [EstateController::class,'store'])->name('estate.store');
-        Route::get('/edit/{package}', [EstateController::class,'edit'])->name('estate.edit');
-        Route::put('/update/{package}', [EstateController::class,'update'])->name('estate.update');
+        Route::get('/', [EstateController::class,'index'])->name('business-settings.index');
+        Route::get('/create', [EstateController::class,'create'])->name('business-settings.create');
+        Route::post('store', [EstateController::class,'store'])->name('business-settings.store');
+        Route::get('/edit/{package}', [EstateController::class,'edit'])->name('business-settings.edit');
+        Route::put('/update/{package}', [EstateController::class,'update'])->name('business-settings.update');
 
     });
+
+
+    Route::prefix('/service-plans')->group(function () {
+        Route::get('/', [ServicePlanController::class,'index'])->name('service-plans.index');
+        Route::get('/create', [ServicePlanController::class,'create'])->name('service-plans.create');
+        Route::post('/store', [ServicePlanController::class,'store'])->name('service-plans.store');
+        Route::get('/edit/{servicePlan}', [ServicePlanController::class,'edit'])->name('service-plans.edit');
+        Route::put('/update/{servicePlan}', [ServicePlanController::class,'update'])->name('service-plans.update');
+        Route::delete('/delete/{servicePlan}', [ServicePlanController::class,'destroy'])->name('service-plans.delete');
+    });
+
+
+
+    Route::prefix('/reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])
+            ->name('reports.index');
+
+        Route::get('/estates/chart', [ReportController::class, 'estatesChartData'])
+            ->name('reports.estates.chart');
+
+        Route::get('/users/chart', [ReportController::class, 'usersChartData'])
+            ->name('reports.users.chart');
+
+        Route::get('/estates/breakdown', [ReportController::class, 'estatesBreakdown'])
+            ->name('reports.estates.breakdown');
+
+        Route::get('/users/breakdown', [ReportController::class, 'usersBreakdown'])
+            ->name('reports.users.breakdown');
+    });
+
 
 });

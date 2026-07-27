@@ -1,326 +1,158 @@
 <?php
 
-namespace App\Http\Controllers\Dashboard\serviceProvider;
+namespace App\Http\Controllers\Dashboard;
 
 use App\Helpers\FileUploder;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\Offer\OfferStoreRequest;
+use App\Http\Requests\Dashboard\Offer\OfferUpdateRequest;
 use App\Models\Category;
-use App\Models\Estate;
 use App\Models\Offer;
 use App\Models\ServiceType;
-use App\Models\Zone;
-use App\Shop;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
+/**
+ * إدارة عروض الإدارة (offer_owner = 'all'): عروض/صفقات تُنشئها الإدارة وتُرسل
+ * لاحقًا لمزودي الخدمة المؤهلين (حسب نوع الخدمة والمنطقة) عبر
+ * OfferOperationController::sendedOffer.
+ *
+ * ⚠️ هذا الملف كان يحتوي سابقًا (بالخطأ) على namespace
+ * App\Http\Controllers\Dashboard\serviceProvider بنفس اسم الكلاس الموجود
+ * فعليًا في app/Http/Controllers/Dashboard/serviceProvider/OfferController.php،
+ * مما كان يسبب "Cannot redeclare class" عند تحميل أي route. تم استبداله بالكامل.
+ */
 class OfferController extends Controller
 {
-    public function dispalyOffer(Offer $offer)
+    public function index(Request $request)
     {
-        $offer = $offer->load('categories', 'zones');
+        if ($request->ajax()) {
+            $data = Offer::where('offer_owner', 'all')
+                ->with(['categories:id,name', 'serviceType:id,name'])
+                ->latest()
+                ->get();
 
-        return view('service-provider.offers.display', compact('offer'));
-    }
-
-    public function createOffer()
-    {
-
-
-        $serviceTypes = ServiceType::all();
-        $categories = Category::all();
-        $zones = Zone::all();
-        return view('service-provider.offers.create-offer', compact('serviceTypes', 'categories', 'zones'));
-    }
-
-
-    public function storeOffer(Request $request)
-    {
-
-
-        $request->validate([
-            'title' => 'required|string',
-            'service_type' => 'required',
-            'service_price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
-            'expiry_date' => 'required',
-            'description' => 'required',
-            'categories' => 'required',
-            'zones' => 'required',
-            'image' => 'required'
-        ]);
-
-
-
- 
-
-
-
-        $check_service_type_exists = ServiceType::where('id', $request->service_type)->first();
-
-        $serviceType = new ServiceType();
-        $service_type_id = null;
-
-        if (!isset($check_service_type_exists)) {
-            $serviceType->name = $request->service_type;
-            $serviceType->save();
-
-            $service_type_id = $serviceType->id;
-        } else {
-            $service_type_id = $request->service_type;
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('service_type', function ($row) {
+                    return $row->serviceType?->name ?? '-';
+                })
+                ->addColumn('formatted_discount', function ($row) {
+                    return $row->offer_type === 'price'
+                        ? number_format((float) $row->service_price, 2) . ' ريال'
+                        : ($row->formatted_discount ?? '-');
+                })
+                ->addColumn('sent_status', function ($row) {
+                    return $row->sended_at ? 'تم الإرسال' : 'لم يتم الإرسال';
+                })
+                ->addColumn('action', function ($row) {
+                    return view('dashboard.offers.action', compact('row'));
+                })
+                ->make(true);
         }
 
-        // DB::beginTransaction();
-        // try {
+        return view('dashboard.offers.index');
+    }
+
+    public function create()
+    {
+        $serviceTypes = ServiceType::select('id', 'name')->get();
+        $categories = Category::select('id', 'name', 'name_ar')->get();
+
+        return view('dashboard.offers.create', compact('serviceTypes', 'categories'));
+    }
+
+    public function store(OfferStoreRequest $request)
+    {
+        $serviceTypeId = $this->resolveServiceTypeId($request->service_type);
+
         $image = null;
-        if ($request->has('image')) {
+        if ($request->hasFile('image')) {
             $image = FileUploder::uploadOneImage($request, 'offers');
         }
-        $offer =   Offer::create([
+
+        $offer = Offer::create([
             'title' => $request->title,
-            'expiry_date' => $request->expiry_date,
-            'service_price' => $request->service_price,
             'description' => $request->description,
-            'discount' => $request->discount,
+            'expiry_date' => $request->expiry_date,
             'offer_type' => $request->offer_type,
-            'service_type_id' => $service_type_id,
-            'offer_owner' => 'me',
+            'service_price' => $request->service_price,
+            'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
+            'service_type_id' => $serviceTypeId,
+            'offer_owner' => 'all',
             'image' => $image,
-            'phone_provider'=>"".auth()->guard('user')->user()->phone.""
-
-
+            // عرض إدارة تم إنشاؤه مباشرة من الإدارة، لا يحتاج مراجعة كعروض المزودين
+            'status' => 'accept',
         ]);
 
-
-        $offer->serviceProviders()->attach(auth()->guard('user')->user()->id);
         $offer->categories()->attach($request->categories);
-        $offer->zones()->attach($request->zones);
-        $offer->updateOfferStatusToSended();
 
-        // $offer->estates()->attach($estae->id);
-        toastr()->success('بنجاح', 'تم حفظ البيانات');
-        return redirect()->route('service-provider.estaes.payment', ['offer_id' => $offer->id]);
-        // return back();
-        // } catch (\Exception $e) {
-        //     DB::rollback();
-        //     throw $e;
-        // }
+        toastr()->success('بنجاح', 'تم إنشاء العرض، يمكنك الآن إرساله لمزودي الخدمة');
 
-
-
-
-
-        // toastr()->success('بنجاح', 'تم حفظ البيانات');
+        return to_route('offers.index');
     }
 
-
-
-    public function update(Offer $offer, Request $request)
+    public function edit(Offer $offer)
     {
+        $serviceTypes = ServiceType::select('id', 'name')->get();
+        $categories = Category::select('id', 'name', 'name_ar')->get();
+        $offer->load('categories');
 
-        // dd($request->all());
+        return view('dashboard.offers.edit', compact('offer', 'serviceTypes', 'categories'));
+    }
 
-        $request->validate([
-            'title' => 'required|string',
-            'service_type' => 'required',
-            'service_price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
-            'expiry_date' => 'required|date',
-            'description' => 'required',
-            'categories' => 'required',
-            'zones' => 'required',
-        ]);
-
-        $check_service_type_exists = ServiceType::where('id', $request->service_type)->first();
-
-        $serviceType = new ServiceType();
-        $service_type_id = null;
-
-        if (!isset($check_service_type_exists)) {
-            $serviceType->name = $request->service_type;
-            $serviceType->save();
-
-            $service_type_id = $serviceType->id;
-        } else {
-            $service_type_id = $request->service_type;
-        }
-
-        $image = null;
-        if ($request->has('image')) {
+    public function update(OfferUpdateRequest $request, Offer $offer)
+    {
+        $image = $offer->image;
+        if ($request->hasFile('image')) {
             $image = FileUploder::uploadOneImage($request, 'offers');
-        } else {
-            $image = $offer->image;
         }
 
         $offer->update([
             'title' => $request->title,
-            'expiry_date' => $request->expiry_date,
-            'service_price' => $request->service_price,
             'description' => $request->description,
-            'discount' => $request->discount,
+            'expiry_date' => $request->expiry_date,
             'offer_type' => $request->offer_type,
-            'service_type_id' => $service_type_id,
-            'offer_owner' => 'me',
+            'service_price' => $request->service_price,
+            'discount' => $request->discount,
+            'discount_type' => $request->discount_type,
             'image' => $image,
-            'phone_provider'=>"09070443070"
         ]);
 
-
-//        $offer->update([
-//            'title' => $request->title,
-//            'expiry_date' => $request->expiry_date,
-//            'service_price' => $request->service_price,
-//            'description' => $request->description,
-//            'discount' => $request->discount,
-//            'offer_type' => $request->offer_type,
-//            'service_type_id' => $service_type_id,
-//            'offer_owner' => 'me',
-//            'phone_provider'=>"09070443070"
-//
-//        ]);
-
         $offer->categories()->sync($request->categories);
-        $offer->zones()->sync($request->zones);
 
-        toastr()->success('بنجاح', 'تم تعديل البيانات');
-        return back();
-    }
-    public function edit(Offer $offer)
-    {
-        $serviceTypes = ServiceType::all();
-        $categories = Category::all();
-        $zones = Zone::all();
-        return view('service-provider.offers.edit-offer', compact('serviceTypes', 'categories', 'zones', 'offer'));
-    }
-    public function pendingOffers()
-    {
-        // offer_service_provider.status === this for pvoit table
+        toastr()->success('بنجاح', 'تم تعديل العرض');
 
-
-        // $offers = auth()->guard('service_provider')->user()->offers;
-        $offers = Offer::where('offer_owner', 'all')->whereHas('serviceProviders', function ($q) {
-            $q->where('user_id', auth()->guard('user')->id())
-            ->where('offer_user.status', 'pending');
-        })->get();
-
-        return view('service-provider.offers.pending', compact('offers'));
+        return to_route('offers.index');
     }
 
-    public function acceptOffers()
+    /**
+     * تفعيل/إلغاء تفعيل عرض من قِبل الإدارة، بصلاحية مطلقة بدون شرط ملكية
+     * (الإدارة تستطيع إيقاف أي عرض، بعكس toggleStatus الخاص بمزود الخدمة نفسه
+     * الموجود في Dashboard\serviceProvider\OfferController).
+     */
+    public function toggleStatus(Offer $offer)
     {
-        $offers = Offer::where('offer_owner', 'all')->whereHas('serviceProviders', function ($q) {
-            $q->where('user_id', auth()->guard('user')->id())
-            ->where('offer_user.status', 'accpet');
-        })->get();
+        $offer->status = $offer->status === 'cancelled' ? 'accept' : 'cancelled';
+        $offer->save();
 
-        return view('service-provider.offers.accept', compact('offers'));
-    }
+        toastr()->success(
+            'بنجاح',
+            $offer->status === 'accept' ? 'تم تفعيل العرض' : 'تم إلغاء تفعيل العرض'
+        );
 
-    public function changeStatusAccpetOffer(Offer  $offer)
-    {
-        $offer->accpet();
-        toastr()->success('بنجاح', 'تم الموافقة على العرض');
         return back();
     }
 
-
-    public function peindingOwnerOffers()
+    private function resolveServiceTypeId($serviceType): int
     {
-        $offers = Offer::where('offer_owner', 'me')->whereHas('serviceProviders', function ($q) {
-            $q->where('user_id', auth()->guard('user')->id());
-            //            ->where('offer_user.status', 'pending');
-        })->get();
+        $existing = ServiceType::where('id', $serviceType)->first();
 
-        return view('service-provider.offers.pending-owner-offers', compact('offers'));
+        if ($existing) {
+            return $existing->id;
+        }
+
+        return ServiceType::create(['name' => $serviceType])->id;
     }
-    public function acceptOwnerOffers()
-    {
-        $offers = Offer::where('offer_owner', 'me')->whereHas('serviceProviders', function ($q) {
-            $q->where('user_id', auth()->guard('user')->id())
-            ->where('offer_user.status', 'accpet');
-        })->get();
-
-        return view('service-provider.offers.accept-owner-offers', compact('offers'));
-    }
-
-
-
-
-    public function index()
-    {
-
-
-
-
-        $categories = Category::all();
-        $shops = Estate::with(['categories'])
-            ->searchResults()
-            ->paginate(9);
-
-
-        
-
-
-        $mapShops = $shops->makeHidden([ 'created_at', 'updated_at', 'user_id', 'images']);
-        $latitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('latitude') : 51.5073509;
-        $longitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('longitude') : -0.12775829999998223;
-        return view('service-provider.dashboard.index', compact('categories', 'shops', 'mapShops', 'latitude', 'longitude'));
-        // return view('service-provider.home', compact('categories', 'shops', 'mapShops', 'latitude', 'longitude'));
-    }
-
-
-
-    public function dashboard ()
-    {
-
-
-
-
-        $categories = Category::all();
-        $shops = Estate::with(['categories'])
-            ->searchResults()
-            ->paginate(9);
-
-
-        
-
-
-        $mapShops = $shops->makeHidden([ 'created_at', 'updated_at', 'user_id', 'images']);
-        $latitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('latitude') : 51.5073509;
-        $longitude = $shops->count() && (request()->filled('category') || request()->filled('search')) ? $shops->average('longitude') : -0.12775829999998223;
-        return view('service-provider.dashboard.index', compact('categories', 'shops', 'mapShops', 'latitude', 'longitude'));
-        // return view('service-provider.home', compact('categories', 'shops', 'mapShops', 'latitude', 'longitude'));
-    }
-
-    public function show(Estate $shop)
-    {
-        $shop->load(['categories']);
-
-        return view('service-provider.details', compact('shop'));
-    }
-
-    public function delete(Offer $offer)
-    {
-
-        $offer->categories()->detach();
-        $offer->zones()->detach();
-        $offer->serviceProviders()->detach();
-        $offer->delete();
-        toastr()->success('بنجاح', 'تم  حذف العرض');
-        return back();
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

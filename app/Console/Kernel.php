@@ -16,6 +16,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+
+        // اعتماد عمولات الإحالة المستحقة يوميًا (انظر ReferralCommissionService).
+        $schedule->command('referrals:process-commissions')->daily();
     }
 
     /**
