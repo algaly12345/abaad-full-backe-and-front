@@ -9,7 +9,7 @@ use App\Http\Controllers\api\v1\CategoryController;
 use App\Http\Controllers\api\v1\ConversationController;
 use App\Http\Controllers\api\v1\CustomerController;
 use App\Http\Controllers\api\v1\EstateController;
-use App\Http\Controllers\Api\v1\EstateSearchController;
+use App\Http\Controllers\api\v1\EstateSearchController;
 use App\Http\Controllers\api\v1\NotificationController;
 use App\Http\Controllers\api\v1\ReferralController;
 use App\Http\Controllers\api\v1\ServiceProvidertController;
@@ -20,11 +20,11 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
 
-use App\Http\Controllers\Api\v1\ServiceManagementController;
-use App\Http\Controllers\Api\v1\ServicePlanManagementController;
-use App\Http\Controllers\Api\v1\ProviderPermissionController;
-use App\Http\Controllers\Api\v1\ReportController;
-use App\Http\Controllers\Api\v1\UserPermissionController;
+use App\Http\Controllers\api\v1\ServiceManagementController;
+use App\Http\Controllers\api\v1\ServicePlanManagementController;
+use App\Http\Controllers\api\v1\ProviderPermissionController;
+use App\Http\Controllers\api\v1\ReportController;
+use App\Http\Controllers\api\v1\UserPermissionController;
 
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
