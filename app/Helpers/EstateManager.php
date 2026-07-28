@@ -10,10 +10,14 @@ class EstateManager
     public static function estate_image_path($image_type)
     {
         $path = '';
-        if ($image_type == 'thumbnail') {
-            $path = Storage::disk('public')->url('product/thumbnail');
-        } elseif ($image_type == 'estate') {
-            $path = Storage::disk('public')->url('estate');
+        try {
+            if ($image_type == 'thumbnail') {
+                $path = Storage::disk('public')->url('product/thumbnail');
+            } elseif ($image_type == 'estate') {
+                $path = Storage::disk('public')->url('estate');
+            }
+        } catch (\Throwable $e) {
+            $path = '';
         }
         return $path;
     }
