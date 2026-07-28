@@ -297,11 +297,11 @@ Route::post('/website-offers/store', [OfferWizardController::class, 'store'])
 
 
     // // Chatting start
-    Route::controller(ChattingController::class)->group(function () {
-        Route::get(Chatting::INDEX[URI] . '/{type}', 'index')->name('chat')->middleware('customer');
-        Route::get(Chatting::MESSAGE[URI], 'getMessageByUser')->name('messages');
-        Route::post(Chatting::MESSAGE[URI], 'addMessage');
-    });
+    // Route::controller(ChattingController::class)->group(function () {
+    //     Route::get(Chatting::INDEX[URI] . '/{type}', 'index')->name('chat')->middleware('customer');
+    //     Route::get(Chatting::MESSAGE[URI], 'getMessageByUser')->name('messages');
+    //     Route::post(Chatting::MESSAGE[URI], 'addMessage');
+    // });
     // // chatting end
 
     // Route::get('wallet-account', 'UserWalletController@my_wallet_account')->name('wallet-account'); //theme fashion
