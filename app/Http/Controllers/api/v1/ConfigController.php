@@ -35,6 +35,7 @@ class ConfigController extends Controller
 
     public function configuration()
     {
+        try {
         $languages = Helpers::get_business_settings('pnc_language');
         $lang_array = [];
         foreach ($languages as $language) {
@@ -106,6 +107,9 @@ class ConfigController extends Controller
 
 
         ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Configuration temporarily unavailable', 'message' => $e->getMessage()], 200);
+        }
     }
 
 
