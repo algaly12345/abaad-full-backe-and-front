@@ -253,7 +253,6 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('{id}/revoke', [UserPermissionController::class, 'revoke']);
         Route::post('{id}/sync', [UserPermissionController::class, 'sync']);
     });
-    });
 
 
     /*
@@ -376,3 +375,4 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
 
 
+});
