@@ -140,8 +140,8 @@ $agent = Agent::where('user_id', $item->user_id)->first();
             $data[]=[
 
                 'title'=>$item->category_name."-".$item->city."-".$item->districts ==null?"not avaiable":$item->category_name."-".$item->city."-".$item->districts,
-                'service_offers'=>self::get_service($item->category->id,$item->zone_id),
-                'category_id'=>$item->category->id,
+                'service_offers'=>self::get_service($item->category?->id, $item->zone_id),
+                'category_id'=>$item->category?->id,
                 'price_negotiation'=>$item->price_negotiation,
                 'video_url'=>$item->video_url,
 
@@ -149,7 +149,7 @@ $agent = Agent::where('user_id', $item->user_id)->first();
 
 //                    $item->offers,
                 //   'title'=>$item->city==null?"omeromer":$item->category->name."-".$estate->city."-".$estate->districts,
-                'category'=>$item->category->position,
+                'category'=>$item->category?->position,
 
                 'estate_id'=> $item->id,
                 'city'=> $item->city==null?"":$item->city,
