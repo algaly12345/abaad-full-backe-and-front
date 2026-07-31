@@ -154,11 +154,11 @@ $agent = Agent::where('user_id', $item->user_id)->first();
                 'estate_id'=> $item->id,
                 'city'=> $item->city==null?"":$item->city,
 
-                'category_name'=>$item->category->name,
-                'zone_name'=>$item->zones->name,
+                'category_name'=>$item->category?->name,
+                'zone_name'=>$item->zones?->name,
 
-                'category_name_ar'=>$item->category->name_ar,
-                'zone_name_ar'=>$item->zones->name_ar,
+                'category_name_ar'=>$item->category?->name_ar,
+                'zone_name_ar'=>$item->zones?->name_ar,
 
                 'id'=> $item->id ,
                 'address' => $item->address,
