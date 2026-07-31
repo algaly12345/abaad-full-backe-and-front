@@ -27,7 +27,7 @@ class EstateLogic
                 when($zone_id, function ($query) use ($zone_id) {
                     $query->where('zone_id',$zone_id);
                 })->  
-                when($advertisement_type, function ($query) use ($advertisement_type) {
+                when($advertisement_type && $advertisement_type !== 'all', function ($query) use ($advertisement_type) {
                     $query->where('advertisement_type',$advertisement_type);
                     
                     
@@ -86,7 +86,7 @@ class EstateLogic
                     $query->where("space",  $space);
                     
                 })->
-                  when($advertisement_type, function ($query) use ($advertisement_type) {
+                  when($advertisement_type && $advertisement_type !== 'all', function ($query) use ($advertisement_type) {
                     $query->where('advertisement_type',$advertisement_type);
                     
                     
