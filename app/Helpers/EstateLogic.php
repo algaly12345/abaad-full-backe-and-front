@@ -372,10 +372,10 @@ $agent = Agent::where('user_id', $item->user_id)->first();
 
 
 
-        $data["category_name"]=$estate->category->name;
-        $data['zone_name']=$estate->zones->name;
-        $data['category_name_ar']=$estate->category->name_ar;
-        $data['zone_name_ar']=$estate->zones->name_ar;
+        $data["category_name"]=$estate->category?->name;
+        $data['zone_name']=$estate->zones?->name;
+        $data['category_name_ar']=$estate->category?->name_ar;
+        $data['zone_name_ar']=$estate->zones?->name_ar;
 
         $data['property_type']=$estate->property_type;
         $data['skyview']=$estate->skyview;
