@@ -17,7 +17,7 @@ class EstateLogic
     {
 
         if($sv==1){
-            $paginator = Estate::Active()
+            $paginator = Estate::Active()->with(['category', 'zones', 'agent'])
                 ->when($category_id, function ($query) use ($category_id) {
                     $query->where('category_id', $category_id);
                 })
@@ -63,7 +63,7 @@ class EstateLogic
                 'estate' => $paginator->items()
             ];
         }else{
-            $paginator = Estate::Active()
+            $paginator = Estate::Active()->with(['category', 'zones', 'agent'])
                 ->when($category_id, function ($query) use ($category_id) {
                     $query->where('category_id', $category_id);
                 })
