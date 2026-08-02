@@ -81,7 +81,7 @@ public function configuration()
                 'agent_image_url' => $r2Base . '/agent',
                 'activities_image_url' => $r2Base . '/activities',
                 'provider_image_url' => $r2Base . '/providers',
-                'banners' => $r2Base . '/banner',
+                'banners' => $r2Base . '/banners',
                 'notification_image_url' => $r2Base . '/notification',
                 'chat_image_url' => $r2Base . '/conversation',
             ],
