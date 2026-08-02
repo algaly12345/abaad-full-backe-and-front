@@ -314,8 +314,8 @@ $agent = Agent::where('user_id', $item->user_id)->first();
 
         $data = [];
 
-        $data['title']=$estate->category->name."-".$estate->city."-".$estate->districts;
-        $data["category"]=$estate->category->position;
+        $data['title']=$estate->category?->name."-".$estate->city."-".$estate->districts;
+        $data["category"]=$estate->category?->position;
         $data['price']= $estate->price;
 
         $data['city']= $estate->city;
