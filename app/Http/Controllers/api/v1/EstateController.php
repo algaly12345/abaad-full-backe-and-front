@@ -49,7 +49,7 @@ class EstateController extends Controller
 
         $type = $request->query('type', 'all');
 
-        $estate = EstateLogic::get_estate($request['zone_id'], $request['category_id'],$request['user_id'],$request["city"],$request['districts'], $request['space'],$filter_data, 10000, $request['offset'],$request['ar_path'],$request['sv'],$request['type']);
+        $estate = EstateLogic::get_estate($request['zone_id'], $request['category_id'],$request['user_id'],$request["city"],$request['districts'], $request['space'],$filter_data, $request->query('limit', 25), $request['offset'],$request['ar_path'],$request['sv'],$request['type']);
       
         $estate['estate'] = EstateLogic::estate_data_formatting($estate['estate']);
 
