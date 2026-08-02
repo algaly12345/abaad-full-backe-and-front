@@ -32,10 +32,9 @@ class ConfigController extends Controller
         $map_api_key_server = $map_api_key_server ? $map_api_key_server->value : null;
         $this->map_api_key = $map_api_key_server;
     }
-
-    public function configuration()
-    {
-        try {
+public function configuration()
+{
+    try {
         $languages = Helpers::get_business_settings('pnc_language');
         $lang_array = [];
         foreach ($languages as $language) {
@@ -45,148 +44,78 @@ class ConfigController extends Controller
             ]);
         }
 
-
         $business_plan = [
             'commission' => 1,
             'subscription' => 1,
         ];
+
+        // نفس مصدر رابط R2 العام اللي تتحكم فيه من لوحة Spring (Settings -> Media Storage)
+        $r2PublicUrl = getWebConfig('r2_public_url');
+        $r2Base = $r2PublicUrl ? rtrim($r2PublicUrl, '/') : '';
+
+        $googleStoreSetting = BusinessSetting::where('type', 'download_app_google_stroe')->first();
+        $googleStoreData = $googleStoreSetting ? json_decode($googleStoreSetting->value, true) : [];
+        $appleStoreSetting = BusinessSetting::where('type', 'download_app_apple_stroe')->first();
+        $appleStoreData = $appleStoreSetting ? json_decode($appleStoreSetting->value, true) : [];
+
+        $mapApiKeySetting = BusinessSetting::where('type', 'map_api_key')->first();
+
         return response()->json([
-            'business_name' => BusinessSetting::where('type', 'company_name')->first()->value,
-            'logo' => optional(
-              BusinessSetting::where('type','company_mobile_logo')->first()
-)->value,
-            'address' => BusinessSetting::where('type', 'company_phone')->first()->value,
-            'phone' => BusinessSetting::where('type', 'company_phone')->first()->value,
-            'email' => BusinessSetting::where('type', 'company_email')->first()->value,
+            'business_name' => optional(BusinessSetting::where('type', 'company_name')->first())->value,
+            'logo' => optional(BusinessSetting::where('type', 'company_mobile_logo')->first())->value,
+            'address' => optional(BusinessSetting::where('type', 'company_phone')->first())->value,
+            'phone' => optional(BusinessSetting::where('type', 'company_phone')->first())->value,
+            'email' => optional(BusinessSetting::where('type', 'company_email')->first())->value,
             'customer_verification' => true,
             'business_plan' => $business_plan,
             'marketing_commission' => 2.5,
             'agent_registration' => 1,
-            'currency_symbol' =>'SR',
-            'digit_after_decimal_point' =>0,
+            'currency_symbol' => 'SR',
+            'digit_after_decimal_point' => 0,
             'base_urls' => [
-                'estate_image_url' => EstateManager::estate_image_path('estate'),
-                'category_image_url' => Storage::disk('public')->url('categories'),
-                'customer_image_url' => Storage::disk('public')->url('profile'),
-                'planed' => Storage::disk('public')->url('planed'),
-               'review_image_url' => Storage::disk('public')->url('reviews'),
-
-                'agent_image_url' => Storage::disk('public')->url('agent'),
-                'activities_image_url' => Storage::disk('public')->url('activities'),
-               'provider_image_url' => Storage::disk('public')->url('providers'),
-                'banners' => Storage::disk('public')->url('banner'),
-                'notification_image_url' => Storage::disk('public')->url('notification'),
-                'chat_image_url'=> Storage::disk('public')->url('conversation')
+                'estate_image_url' => $r2Base . '/estate',
+                'category_image_url' => $r2Base . '/categories',
+                'customer_image_url' => $r2Base . '/profile',
+                'planed' => $r2Base . '/planed',
+                'review_image_url' => $r2Base . '/reviews',
+                'agent_image_url' => $r2Base . '/agent',
+                'activities_image_url' => $r2Base . '/activities',
+                'provider_image_url' => $r2Base . '/providers',
+                'banners' => $r2Base . '/banner',
+                'notification_image_url' => $r2Base . '/notification',
+                'chat_image_url' => $r2Base . '/conversation',
             ],
             'about_us' => Helpers::get_business_settings('about_us'),
             'about_us_ar' => Helpers::get_business_settings('about_us_ar'),
             'privacy_policy' => Helpers::get_business_settings('privacy_policy'),
-               'privacy_policy_ar' => Helpers::get_business_settings('privacy_policy_ar'),
-               
-                'app_url_ios' => 'https://apps.apple.com/fi/app/%D8%A7%D8%A8%D8%B9%D8%A7%D8%AF-%D8%A7%D9%84%D8%B9%D9%82%D8%A7%D8%B1%D9%8A%D8%A9/id6470352371',
-               
+            'privacy_policy_ar' => Helpers::get_business_settings('privacy_policy_ar'),
+
+            'app_url_ios' => $appleStoreData['link'] ?? '',
+            'app_url_android' => $googleStoreData['link'] ?? '',
+
             'terms_conditions' => Helpers::get_business_settings('terms_condition'),
             'terms_condition_ar' => Helpers::get_business_settings('terms_condition_ar'),
             'feature_ar' => Helpers::get_business_settings('feature_ar'),
             'feature' => Helpers::get_business_settings('feature'),
-            'app_minimum_version_android' => 7.0,
-            'app_minimum_version_ios' => 7.0,
-            'app_url_android' => "ffdgfdgfdg",
-            'admin_commission' => (float)(Helpers::get_business_settings('admin_commission') ? Helpers::get_business_settings('admin_commission') : 0),
+            'app_minimum_version_android' => (float)(Helpers::get_business_settings('app_min_version_android') ?: 1.0),
+            'app_minimum_version_ios' => (float)(Helpers::get_business_settings('app_min_version_ios') ?: 1.0),
+            'admin_commission' => (float)(Helpers::get_business_settings('admin_commission') ?: 0),
             'language' => $lang_array,
             'default_location' => ['lat' => '23.757989', 'lng' => '90.360587'],
             'email_verification' => (boolean)Helpers::get_business_settings('email_verification'),
             'phone_verification' => (boolean)Helpers::get_business_settings('phone_verification'),
             'country' => Helpers::get_business_settings('country_code'),
-            'demo' => (bool)(env('APP_MODE') == 'demo' ? true : false),
+            'demo' => (bool)(env('APP_MODE') == 'demo'),
             'free_trial_period_status' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['status'] : 0),
             'free_trial_period_data' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['data'] : 0),
-            'maintenance_mode' => false,
-            
-            'google_map_key' => 'AIzaSyAwM15LYUky7qqVuXdBQc9zavA39y487jQ',
+            'maintenance_mode' => Helpers::get_business_settings('maintenance_mode') == '1',
 
-
+            'google_map_key' => $mapApiKeySetting ? $mapApiKeySetting->value : '',
         ]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => 'Configuration temporarily unavailable', 'message' => $e->getMessage()], 200);
-        }
+    } catch (\Throwable $e) {
+        return response()->json(['error' => 'Configuration temporarily unavailable', 'message' => $e->getMessage()], 200);
     }
-
-
-    public function place_api_autocomplete(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'search_text' => 'required',
-        ]);
-
-        if ($validator->errors()->count() > 0) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
-        }
-        $response = Http::get('https://maps.googleapis.com/maps/api/place/autocomplete/json?input=' . $request['search_text'] . '&key=AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4');
-        return $response->json();
-    }
-
-
-    public function place_api_details(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'placeid' => 'required',
-        ]);
-
-        if ($validator->errors()->count() > 0) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
-        }
-        $response = Http::get('https://maps.googleapis.com/maps/api/place/details/json?placeid=' . $request['placeid'] . '&key=AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4');
-        return $response->json();
-    }
-
-
-    public function get_zone(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'lat' => 'required',
-            'lng' => 'required',
-        ]);
-
-        if ($validator->errors()->count() > 0) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
-        }
-        $point = new Point($request->lat, $request->lng);
-
-//        $zones = Zone::query()
-//            ->whereCoordinates('coordinates', $point)->latest()->get(['id', 'status']);
-
-        $address= mb_strimwidth($request->address, 0, 8, '');
-     //   return Str::limit($request->address,8);
-        $user = Estate::where('national_address',$address)->first();
-
-        if ($user) {
-            return response()->json([
-                'errors' => [
-                    ['code' => 'coordinates', 'message' => 'messages.service_not_available_in_this_area']
-                ]
-            ], 404);
-        }
-//        $data = array_filter($zones->toArray(), function ($zone) {
-//            if ($zone['status'] == 1) {
-//                return $zone;
-//            }
-//        });
-
-//        if (count($data) > 0) {
-//            return response()->json(['zone_id' => json_encode(array_column($data, 'id')), 'zone_data'=>array_values($data)], 200);
-//        }
-
-
-//        return  response()->json(array("success"=>"true","token"=>'fdsf'))
-        return response()->json([
-            'zone_id'=>'[1,2]',
-            'zone_data' => [
-                ['id' => 2, 'status' => 1,'minimum_shipping_charge'=>20,'per_km_shipping_charge'=>30],
-                ['id' => 2, 'status' => 1,'minimum_shipping_charge'=>20,'per_km_shipping_charge'=>30]
-            ]
-        ], 200);
-    }
+}
 
 
 
