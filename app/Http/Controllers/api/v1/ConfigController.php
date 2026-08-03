@@ -35,13 +35,28 @@ class ConfigController extends Controller
 public function configuration()
 {
     try {
-        $languages = Helpers::get_business_settings('pnc_language');
+        // تحميل كل إعدادات business_settings دفعة واحدة بدل استعلام منفصل لكل حقل
+        $allSettings = BusinessSetting::all()->keyBy('type');
+
+        $getDecoded = function ($type) use ($allSettings) {
+            $setting = $allSettings->get($type);
+            if (!$setting) return null;
+            $decoded = json_decode($setting->value, true);
+            return is_null($decoded) ? $setting->value : $decoded;
+        };
+        $getRaw = function ($type) use ($allSettings) {
+            return optional($allSettings->get($type))->value;
+        };
+
+        $languages = $getDecoded('pnc_language');
         $lang_array = [];
-        foreach ($languages as $language) {
-            array_push($lang_array, [
-                'code' => $language,
-                'name' => Helpers::get_language_name($language)
-            ]);
+        if (is_array($languages)) {
+            foreach ($languages as $language) {
+                array_push($lang_array, [
+                    'code' => $language,
+                    'name' => Helpers::get_language_name($language)
+                ]);
+            }
         }
 
         $business_plan = [
@@ -49,23 +64,18 @@ public function configuration()
             'subscription' => 1,
         ];
 
-        // نفس مصدر رابط R2 العام اللي تتحكم فيه من لوحة Spring (Settings -> Media Storage)
-        $r2PublicUrl = getWebConfig('r2_public_url');
+        $r2PublicUrl = $getDecoded('r2_public_url');
         $r2Base = $r2PublicUrl ? rtrim($r2PublicUrl, '/') : '';
 
-        $googleStoreSetting = BusinessSetting::where('type', 'download_app_google_stroe')->first();
-        $googleStoreData = $googleStoreSetting ? json_decode($googleStoreSetting->value, true) : [];
-        $appleStoreSetting = BusinessSetting::where('type', 'download_app_apple_stroe')->first();
-        $appleStoreData = $appleStoreSetting ? json_decode($appleStoreSetting->value, true) : [];
-
-        $mapApiKeySetting = BusinessSetting::where('type', 'map_api_key')->first();
+        $googleStoreData = $getDecoded('download_app_google_stroe') ?: [];
+        $appleStoreData = $getDecoded('download_app_apple_stroe') ?: [];
 
         return response()->json([
-            'business_name' => optional(BusinessSetting::where('type', 'company_name')->first())->value,
-            'logo' => optional(BusinessSetting::where('type', 'company_mobile_logo')->first())->value,
-            'address' => optional(BusinessSetting::where('type', 'company_phone')->first())->value,
-            'phone' => optional(BusinessSetting::where('type', 'company_phone')->first())->value,
-            'email' => optional(BusinessSetting::where('type', 'company_email')->first())->value,
+            'business_name' => $getRaw('company_name'),
+            'logo' => $getRaw('company_mobile_logo'),
+            'address' => $getRaw('company_phone'),
+            'phone' => $getRaw('company_phone'),
+            'email' => $getRaw('company_email'),
             'customer_verification' => true,
             'business_plan' => $business_plan,
             'marketing_commission' => 2.5,
@@ -85,32 +95,32 @@ public function configuration()
                 'notification_image_url' => $r2Base . '/notification',
                 'chat_image_url' => $r2Base . '/conversation',
             ],
-            'about_us' => Helpers::get_business_settings('about_us'),
-            'about_us_ar' => Helpers::get_business_settings('about_us_ar'),
-            'privacy_policy' => Helpers::get_business_settings('privacy_policy'),
-            'privacy_policy_ar' => Helpers::get_business_settings('privacy_policy_ar'),
+            'about_us' => $getDecoded('about_us'),
+            'about_us_ar' => $getDecoded('about_us_ar'),
+            'privacy_policy' => $getDecoded('privacy_policy'),
+            'privacy_policy_ar' => $getDecoded('privacy_policy_ar'),
 
             'app_url_ios' => $appleStoreData['link'] ?? '',
             'app_url_android' => $googleStoreData['link'] ?? '',
 
-            'terms_conditions' => Helpers::get_business_settings('terms_condition'),
-            'terms_condition_ar' => Helpers::get_business_settings('terms_condition_ar'),
-            'feature_ar' => Helpers::get_business_settings('feature_ar'),
-            'feature' => Helpers::get_business_settings('feature'),
-            'app_minimum_version_android' => (float)(Helpers::get_business_settings('app_min_version_android') ?: 1.0),
-            'app_minimum_version_ios' => (float)(Helpers::get_business_settings('app_min_version_ios') ?: 1.0),
-            'admin_commission' => (float)(Helpers::get_business_settings('admin_commission') ?: 0),
+            'terms_conditions' => $getDecoded('terms_condition'),
+            'terms_condition_ar' => $getDecoded('terms_condition_ar'),
+            'feature_ar' => $getDecoded('feature_ar'),
+            'feature' => $getDecoded('feature'),
+            'app_minimum_version_android' => (float)($getDecoded('app_min_version_android') ?: 1.0),
+            'app_minimum_version_ios' => (float)($getDecoded('app_min_version_ios') ?: 1.0),
+            'admin_commission' => (float)($getDecoded('admin_commission') ?: 0),
             'language' => $lang_array,
             'default_location' => ['lat' => '23.757989', 'lng' => '90.360587'],
-            'email_verification' => (boolean)Helpers::get_business_settings('email_verification'),
-            'phone_verification' => (boolean)Helpers::get_business_settings('phone_verification'),
-            'country' => Helpers::get_business_settings('country_code'),
+            'email_verification' => (boolean)$getDecoded('email_verification'),
+            'phone_verification' => (boolean)$getDecoded('phone_verification'),
+            'country' => $getDecoded('country_code'),
             'demo' => (bool)(env('APP_MODE') == 'demo'),
             'free_trial_period_status' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['status'] : 0),
             'free_trial_period_data' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['data'] : 0),
-            'maintenance_mode' => Helpers::get_business_settings('maintenance_mode') == '1',
+            'maintenance_mode' => $getDecoded('maintenance_mode') == '1',
 
-            'google_map_key' => $mapApiKeySetting ? $mapApiKeySetting->value : '',
+            'google_map_key' => $getRaw('map_api_key') ?: '',
         ]);
     } catch (\Throwable $e) {
         return response()->json(['error' => 'Configuration temporarily unavailable', 'message' => $e->getMessage()], 200);
@@ -118,9 +128,7 @@ public function configuration()
 }
 
 
-
-
-    public function geocode_api(Request $request)
+public function geocode_api(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'lat' => 'required',
