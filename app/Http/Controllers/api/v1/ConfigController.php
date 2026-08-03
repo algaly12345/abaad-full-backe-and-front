@@ -94,7 +94,7 @@ public function configuration()
                 'banners' => $r2Base . '/banners',
                 'notification_image_url' => $r2Base . '/notification',
                 'chat_image_url' => $r2Base . '/conversation',
-                'zones' => $r2Base . '/zones',
+                'zone_image_url' => $r2Base . '/zone',
             ],
             'about_us' => $getDecoded('about_us'),
             'about_us_ar' => $getDecoded('about_us_ar'),
