@@ -119,7 +119,7 @@ public function configuration()
             'demo' => (bool)(env('APP_MODE') == 'demo'),
             'free_trial_period_status' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['status'] : 0),
             'free_trial_period_data' => (int)(isset($settings['free_trial_period']) ? json_decode($settings['free_trial_period'], true)['data'] : 0),
-            'maintenance_mode' => $getDecoded('maintenance_mode') == '1',
+            'maintenance_mode' => true,
 
             'google_map_key' => $getRaw('map_api_key') ?: '',
         ]);
