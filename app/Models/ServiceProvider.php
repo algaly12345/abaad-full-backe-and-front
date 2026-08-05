@@ -15,6 +15,7 @@ class ServiceProvider extends Authenticatable
 
     protected $fillable = [
        'identity_number',
+       'freelance_membership_number',
        'identity_type',
        'image',
        'address',

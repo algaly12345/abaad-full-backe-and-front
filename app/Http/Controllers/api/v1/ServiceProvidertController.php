@@ -120,17 +120,15 @@ class ServiceProvidertController extends Controller
         $data = $request->validate([
             'identity_type' => 'required|in:individual,company',
             'identity_number' => 'nullable|required_if:identity_type,individual|string',
+            'freelance_membership_number' => 'nullable|required_if:identity_type,individual|string',
             'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
         ]);
 
         $user = auth()->user();
 
-        if (! $user->provider) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'لا يوجد ملف مزوّد خدمة مرتبط بهذا الحساب',
-            ], 422);
-        }
+        // يُنشأ سجل مزوّد الخدمة تلقائيًا هنا عند أول استدعاء لهذه الشاشة،
+        // إذ لا توجد أي نقطة أخرى في مسار التسجيل الذاتي عبر التطبيق تُنشئه.
+        $user->provider()->firstOrCreate(['user_id' => $user->id]);
 
         $this->serviceProviderService->updateProviderIdentity($data, $user);
 
@@ -138,7 +136,7 @@ class ServiceProvidertController extends Controller
             'status' => 'success',
             'message' => 'تم حفظ بيانات الهوية بنجاح',
             'data' => $user->provider->fresh()->only([
-                'identity_type', 'identity_number', 'commercial_registration_no',
+                'identity_type', 'identity_number', 'freelance_membership_number', 'commercial_registration_no',
             ]),
         ], 200);
     }

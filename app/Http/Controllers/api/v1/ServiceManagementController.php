@@ -23,7 +23,16 @@ class ServiceManagementController extends Controller
 
         $image = null;
         if ($request->hasFile('image')) {
-            $image = $request->file('image')->store('offers', 'public');
+            $storedPath = $request->file('image')->store('offers', 'public');
+            if ($storedPath === false) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا',
+                ], 500);
+            }
+            // نخزّن اسم الملف فقط في قاعدة البيانات (بدون مجلد/رابط كامل) حتى لا
+            // يرتبط السجل بمكان التخزين الحالي — انظر ServiceOfferResource لإعادة بناء الرابط.
+            $image = basename($storedPath);
         }
 
         $offer = Offer::create([
@@ -86,7 +95,14 @@ class ServiceManagementController extends Controller
 
         $image = $offer->image;
         if ($request->hasFile('image')) {
-            $image = $request->file('image')->store('offers', 'public');
+            $storedPath = $request->file('image')->store('offers', 'public');
+            if ($storedPath === false) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا',
+                ], 500);
+            }
+            $image = basename($storedPath);
         }
 
         $offer->update([

@@ -37,6 +37,7 @@ class StoreOfferRequest extends FormRequest
 
             'identity_type' => 'nullable|in:individual,company',
             'identity_number' => 'nullable|required_if:identity_type,individual|string',
+            'freelance_membership_number' => 'nullable|required_if:identity_type,individual|string',
             'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
         ];
     }

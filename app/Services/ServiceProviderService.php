@@ -64,6 +64,9 @@ class ServiceProviderService
         if ($data['identity_type'] === 'individual' && !empty($data['identity_number'])) {
             $identityUpdates['identity_number'] = $data['identity_number'];
         }
+        if ($data['identity_type'] === 'individual' && !empty($data['freelance_membership_number'])) {
+            $identityUpdates['freelance_membership_number'] = $data['freelance_membership_number'];
+        }
         if ($data['identity_type'] === 'company' && !empty($data['commercial_registration_no'])) {
             $identityUpdates['commercial_registration_no'] = $data['commercial_registration_no'];
         }
