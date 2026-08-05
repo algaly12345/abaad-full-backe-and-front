@@ -23,16 +23,17 @@ class ServiceManagementController extends Controller
 
         $image = null;
         if ($request->hasFile('image')) {
-            $storedPath = $request->file('image')->store('offers', 'public');
+            // الصور الجديدة تُرفع إلى مجلد service-providers (بدل offers القديم) —
+            // نخزّن المسار النسبي كاملاً (مجلد+اسم، بدون نطاق/رابط كامل) حتى يبقى كل
+            // سجل يعرف مجلده الفعلي، دون نقل الصور القديمة الموجودة تحت offers/.
+            $storedPath = $request->file('image')->store('service-providers', 'public');
             if ($storedPath === false) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا',
                 ], 500);
             }
-            // نخزّن اسم الملف فقط في قاعدة البيانات (بدون مجلد/رابط كامل) حتى لا
-            // يرتبط السجل بمكان التخزين الحالي — انظر ServiceOfferResource لإعادة بناء الرابط.
-            $image = basename($storedPath);
+            $image = $storedPath;
         }
 
         $offer = Offer::create([
@@ -95,14 +96,14 @@ class ServiceManagementController extends Controller
 
         $image = $offer->image;
         if ($request->hasFile('image')) {
-            $storedPath = $request->file('image')->store('offers', 'public');
+            $storedPath = $request->file('image')->store('service-providers', 'public');
             if ($storedPath === false) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا',
                 ], 500);
             }
-            $image = basename($storedPath);
+            $image = $storedPath;
         }
 
         $offer->update([
