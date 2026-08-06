@@ -13,10 +13,10 @@ class ServiceOfferResource extends JsonResource
             'id'            => $this->id,
             'title'         => $this->title,
             'description'   => $this->description,
-            // نخزّن فقط اسم الملف في قاعدة البيانات (بدون مجلد/رابط كامل) حتى لا يرتبط
-            // السجل بمكان تخزين معيّن — basename() تتعامل أيضاً مع السجلات القديمة
-            // التي خُزّن فيها المسار الكامل "offers/xxx.jpg" قبل هذا التعديل.
-            'image'         => $this->image ? Storage::disk('public')->url('offers/' . basename($this->image)) : null,
+            // يُخزَّن المسار النسبي كاملاً (مجلد+اسم) في قاعدة البيانات، بدون نطاق/رابط
+            // كامل — الصور القديمة تحت offers/ والجديدة تحت service-providers/، وكل
+            // سجل يحمل مجلده الفعلي فلا حاجة لأي تخمين هنا.
+            'image'         => $this->image ? Storage::disk('public')->url($this->image) : null,
             'offer_type'    => $this->offer_type,
             'service_price' => $this->service_price !== null ? (float) $this->service_price : null,
             'discount'      => $this->discount !== null ? (float) $this->discount : null,

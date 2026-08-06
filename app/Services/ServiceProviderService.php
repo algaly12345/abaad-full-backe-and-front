@@ -103,7 +103,12 @@ class ServiceProviderService
                     public function __construct($file) { $this->image = $file; }
                     public function has($key) { return true; }
                 };
-                $image = FileUploder::uploadOneImage($requestWrapper, 'offers');
+                $image = FileUploder::uploadOneImage($requestWrapper, 'service-providers');
+                if ($image === false) {
+                    // رمي استثناء هنا يُلغي كامل المعاملة (DB::transaction) فلا يُنشأ
+                    // عرض أو اشتراك بصورة فاسدة — storeOfferAPI يلتقطه ويُعيد 500 واضح.
+                    throw new \RuntimeException('فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا');
+                }
             }
 
             $expiryDate = Carbon::now()->addMonths($duration)->format('Y-m-d');
