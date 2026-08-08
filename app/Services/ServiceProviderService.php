@@ -77,7 +77,7 @@ class ServiceProviderService
      * إنشاء العرض والاشتراك المالي، ثم توليد رابط دفع موقّع (Signed URL)
      * صالح لمدة محدودة، يستخدمه التطبيق مباشرة داخل WebView.
      */
-    public function createOfferAndSubscription(array $data, $user, $imageFile): array
+   public function createOfferAndSubscription(array $data, $user, $imageFile): array
     {
         return DB::transaction(function () use ($data, $user, $imageFile) {
             $plan = ServicePlan::findOrFail($data['service_plan_id']);
@@ -109,6 +109,10 @@ class ServiceProviderService
                     // عرض أو اشتراك بصورة فاسدة — storeOfferAPI يلتقطه ويُعيد 500 واضح.
                     throw new \RuntimeException('فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا');
                 }
+                // يُحفَظ اسم الملف فقط في offers.image (بدون بادئة "service-providers/")
+                // — المجلد ثابت ومعروف مسبقاً فيُعاد بناؤه عند القراءة
+                // (راجع ServiceOfferResource::toArray) بدل تكراره في كل سجل.
+                $image = basename($image);
             }
 
             $expiryDate = Carbon::now()->addMonths($duration)->format('Y-m-d');
