@@ -9,7 +9,7 @@ use App\Http\Controllers\api\v1\CategoryController;
 use App\Http\Controllers\api\v1\ConversationController;
 use App\Http\Controllers\api\v1\CustomerController;
 use App\Http\Controllers\api\v1\EstateController;
-use App\Http\Controllers\api\v1\EstateSearchController;
+use App\Http\Controllers\Api\v1\EstateSearchController;
 use App\Http\Controllers\api\v1\NotificationController;
 use App\Http\Controllers\api\v1\ReferralController;
 use App\Http\Controllers\api\v1\ServiceProvidertController;
@@ -20,11 +20,11 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
 
-use App\Http\Controllers\api\v1\ServiceManagementController;
-use App\Http\Controllers\api\v1\ServicePlanManagementController;
-use App\Http\Controllers\api\v1\ProviderPermissionController;
-use App\Http\Controllers\api\v1\ReportController;
-use App\Http\Controllers\api\v1\UserPermissionController;
+use App\Http\Controllers\Api\v1\ServiceManagementController;
+use App\Http\Controllers\Api\v1\ServicePlanManagementController;
+use App\Http\Controllers\Api\v1\ProviderPermissionController;
+use App\Http\Controllers\Api\v1\ReportController;
+use App\Http\Controllers\Api\v1\UserPermissionController;
 
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
@@ -65,10 +65,6 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     */
     Route::group(['prefix' => 'categories'], function () {
         Route::get('/', [CategoryController::class, 'get_categories']);
-    });
-
-        Route::group(['prefix' => 'provider-subscriptions'], function () {
-        Route::get('/', [ServiceProvidertController::class,'index']);
     });
 
     /*
@@ -127,12 +123,11 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('create-report', [EstateController::class, 'createReport']);
         Route::get('advantages', [EstateController::class, 'advantage']);
         Route::get('existing-advantages', [EstateController::class, 'getExistingAdvantages']);
-        Route::get('validate-advertisement', [EstateController::class, 'validateAdvertisement']);
+        // Route::post('advantages/selected', [EstateController::class, 'getSelectedAdvantages']);
 
         // Licensing / compliance
         Route::get('validate-advertisement', [EstateController::class, 'validateAdvertisement']);
         Route::post('platform-compliance', [EstateController::class, 'sendComplianceData']);
-
         Route::post('check-license', [EstateController::class, 'check_license']);
 
         // Categories / search
@@ -157,16 +152,6 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('nafath-validation', [CustomerController::class, 'sendRequest']);
         Route::post('check-request-status', [CustomerController::class, 'checkRequestStatus']);
     });
-
-        Route::get('notifications',  [NotificationController::class,'get_notifications']);
-        Route::post('update-profile', [CustomerController::class,'update_profile']);
-        Route::get('info', [CustomerController::class,'info']);
-        Route::post('complete-agent', [AgentController::class,'complete_agent']);
-        Route::post('cm-firebase-token', [CustomerController::class,'update_cm_firebase_token']);
-        Route::get('my-estate', [CustomerController::class,'info_by_id']);
-        Route::delete('delete', [CustomerController::class,'delete']);
-        Route::post('nafath-validation', [CustomerController::class,'sendRequest']);
-        Route::post('check-request-status', [CustomerController::class,'checkRequestStatus']);
 
     /*
     |--------------------------------------------------------------------------
@@ -229,7 +214,14 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('offer-setup-data', [ServiceProvidertController::class, 'getOfferSetupData']);
         Route::post('calculate-price', [ServiceProvidertController::class, 'calculatePrice']);
         Route::post('store-offer', [ServiceProvidertController::class, 'storeOfferAPI']);
+        // حفظ فوري لبيانات هوية مزوّد الخدمة (فرد/منشأة) من ProviderUpgradeScreen
+        // مباشرة، بدل انتظار إتمام معالج "إضافة خدمة" بالكامل — فلا تُفقَد لو
+        // ترك المستخدم المعالج قبل إكماله.
         Route::post('update-identity', [ServiceProvidertController::class, 'updateIdentity']);
+        // رفع/تحديث شعار مزوّد الخدمة الظاهر في بطاقات قائمة العروض
+        // (ServiceOfferResource::providers.image) — لا علاقة له بصورة العرض
+        // نفسها (store-offer) ولا بصورة حساب المستخدم العامة (customer/update-profile).
+        Route::post('update-logo', [ServiceProvidertController::class, 'updateLogo']);
         Route::get('{subscription_number}/status', [ServiceProvidertController::class, 'getSubscriptionStatus']);
     });
 
@@ -239,18 +231,29 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::post('store-offer', [ServiceProvidertController::class, 'storeOfferAPI']);
     });
 
+    // نقطة استرجاع ذاتية للأدوار/الصلاحيات — معزولة في مجموعة خاصة لتجنب
+    // تغيير سلوك المسارات الثلاثة أعلاه دون طلب صريح.
     Route::group(['prefix' => 'service-provider', 'middleware' => ['auth:api', 'provider.api']], function () {
         Route::get('permissions', [ProviderPermissionController::class, 'index']);
     });
 
+    // اسم مسار مطابق لما يستخدمه تطبيق الجوال (provider/permissions بدل service-provider/permissions).
     Route::group(['prefix' => 'provider', 'middleware' => ['auth:api', 'provider.api']], function () {
         Route::get('permissions', [ProviderPermissionController::class, 'index']);
     });
 
+
     Route::group(['prefix' => 'manage-permissions', 'middleware' => 'auth:api'], function () {
+        // عرض كل الصلاحيات الموجودة في النظام
         Route::get('/', [UserPermissionController::class, 'allPermissions']);
+        
+        // إسناد صلاحية لمستخدم (مثلاً إعطاؤه صلاحية الباقات)
         Route::post('{id}/assign', [UserPermissionController::class, 'assign']);
+        
+        // سحب صلاحية من مستخدم
         Route::post('{id}/revoke', [UserPermissionController::class, 'revoke']);
+        
+        // مزامنة الصلاحيات (تحذف القديم وتضع الجديد)
         Route::post('{id}/sync', [UserPermissionController::class, 'sync']);
     });
 
