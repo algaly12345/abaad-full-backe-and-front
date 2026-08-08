@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Offer extends Model
 {
+    /**
+     * يُعيد المسار النسبي الكامل لصورة العرض كما هو مُخزَّن في العمود image
+     * (يشمل المجلد فعلياً: offers/xxx.jpg أو service-providers/xxx.jpg حسب وقت الرفع).
+     */
+    public function offerImagePath(): ?string
+    {
+        return $this->image;
+    }
+
     use HasFactory;
 
     public const DISCOUNT_TYPE_PERCENTAGE = 'percentage';
