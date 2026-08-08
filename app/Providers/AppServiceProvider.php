@@ -77,6 +77,29 @@ class AppServiceProvider extends ServiceProvider
     // }
 
 
+    private function configureR2FromBusinessSettings()
+    {
+        try {
+            $accessKey = \App\Models\BusinessSetting::where('type', 'r2_access_key_id')->first();
+            $secretKey = \App\Models\BusinessSetting::where('type', 'r2_secret_access_key')->first();
+            $bucket = \App\Models\BusinessSetting::where('type', 'r2_bucket')->first();
+            $accountId = \App\Models\BusinessSetting::where('type', 'r2_account_id')->first();
+
+            if ($accessKey && $secretKey && $bucket && $accountId) {
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.key', $accessKey->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.secret', $secretKey->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.bucket', $bucket->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.endpoint', 'https://' . $accountId->value . '.r2.cloudflarestorage.com');
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.key', $accessKey->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.secret', $secretKey->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.bucket', $bucket->value);
+                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.endpoint', 'https://' . $accountId->value . '.r2.cloudflarestorage.com');
+            }
+        } catch (\Throwable $e) {
+            // تجاهل بأمان لو فشل الاتصال بقاعدة البيانات وقت الإقلاع
+        }
+    }
+
     public function boot()
     {
 
