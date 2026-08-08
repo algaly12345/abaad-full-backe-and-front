@@ -142,6 +142,34 @@ class ServiceProvidertController extends Controller
     }
 
     /**
+     * POST /api/v1/provider-subscriptions/update-logo
+     * رفع/تحديث شعار مزوّد الخدمة الخاص بالمستخدم الحالي، ليظهر بجانب اسمه
+     * في بطاقات قائمة العروض (راجع ServiceOfferResource::providers.image
+     * و_ProviderAvatar بتطبيق الجوال). نفس مجلد التخزين المستخدم من لوحة
+     * تحكم الأدمن (FileUploder::uploadOneImage(..., 'service-providers'))
+     * حتى يبقى provider_image_url المُعاد من ConfigController صالحًا للحالتين.
+     */
+    public function updateLogo(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
+
+        $user = auth()->user();
+        $user->provider()->firstOrCreate(['user_id' => $user->id]);
+
+        $image = \App\Helpers\FileUploder::uploadOneImage($request, 'service-providers');
+
+        $user->provider()->update(['image' => $image]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث الشعار بنجاح',
+            'data' => $user->provider->fresh()->only(['image']),
+        ], 200);
+    }
+
+    /**
      * POST /api/v1/provider-subscriptions/store-offer
      * إنشاء العرض والاشتراك. الرد يحتوي payment_url لفتحه في WebView.
      */

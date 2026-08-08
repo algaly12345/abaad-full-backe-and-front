@@ -2,11 +2,24 @@
 
 namespace App\Http\Resources;
 
+use App\Helpers\Helpers;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class ServiceOfferResource extends JsonResource
 {
+    // يُخزَّن مرة واحدة لكل طلب حتى لا تتكرر قراءة business_settings لكل عرض
+    // عند عرض قائمة (تجنّب N+1 query غير ضروري).
+    private static ?string $cachedR2BaseUrl = null;
+
+    private function r2BaseUrl(): string
+    {
+        if (self::$cachedR2BaseUrl === null) {
+            self::$cachedR2BaseUrl = rtrim((string) Helpers::get_business_settings('r2_public_url'), '/');
+        }
+
+        return self::$cachedR2BaseUrl;
+    }
+
     public function toArray($request)
     {
         return [
@@ -15,8 +28,9 @@ class ServiceOfferResource extends JsonResource
             'description'   => $this->description,
             // يُخزَّن المسار النسبي كاملاً (مجلد+اسم) في قاعدة البيانات، بدون نطاق/رابط
             // كامل — الصور القديمة تحت offers/ والجديدة تحت service-providers/، وكل
-            // سجل يحمل مجلده الفعلي فلا حاجة لأي تخمين هنا.
-            'image'         => $this->image ? Storage::disk('public')->url($this->image) : null,
+            // سجل يحمل مجلده الفعلي فلا حاجة لأي تخمين هنا. النطاق نفسه يأتي من
+            // business_settings (r2_public_url) بدل .env مباشرة.
+            'image'         => $this->image ? $this->r2BaseUrl() . '/' . $this->image : null,
             'offer_type'    => $this->offer_type,
             'service_price' => $this->service_price !== null ? (float) $this->service_price : null,
             'discount'      => $this->discount !== null ? (float) $this->discount : null,
@@ -65,7 +79,7 @@ class ServiceOfferResource extends JsonResource
                     'website'   => $provider->website,
                     'tiktok'    => $provider->tiktok,
                     'twitter'   => $provider->twitter,
-                    'image'     => $provider->image ? Storage::disk('public')->url('profile/' . $provider->image) : null,
+                    'image'     => $provider->image ? $this->r2BaseUrl() . '/profile/' . $provider->image : null,
                 ]);
             }),
 

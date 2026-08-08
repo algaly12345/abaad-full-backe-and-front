@@ -46,7 +46,7 @@ class ReferralController extends Controller
      */
     public function index(Request $request)
     {
-        $referrals = Referral::with(['referred:id,name,phone', 'commission'])
+        $referrals = Referral::with(['referred:id,name,phone,image', 'commission'])
             ->where('referrer_id', $request->user()->id)
             ->latest('id')
             ->get();
@@ -64,6 +64,7 @@ class ReferralController extends Controller
             return [
                 'referred_name' => $referral->referred->name ?? null,
                 'referred_phone' => $referral->referred->phone ?? null,
+                'referred_image' => $referral->referred->image ?? null,
                 'package_name' => $subscription->servicePlan->name ?? null,
                 'transaction_amount' => $subscription ? (float) $subscription->price : null,
                 'commission_amount' => $commission->amount ?? null,
