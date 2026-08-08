@@ -14,7 +14,11 @@ class Offer extends Model
      */
     public function offerImagePath(): ?string
     {
-        return $this->image;
+        if (!$this->image) {
+            return null;
+        }
+        // القيمة المخزَّنة اسم الملف فقط دون مجلد — الصور القديمة كلها تحت offers/
+        return 'offers/' . $this->image;
     }
 
     use HasFactory;
