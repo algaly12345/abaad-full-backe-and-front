@@ -17,8 +17,14 @@ class Offer extends Model
         if (!$this->image) {
             return null;
         }
-        // القيمة المخزَّنة اسم الملف فقط دون مجلد — الصور القديمة كلها تحت offers/
-        return 'offers/' . $this->image;
+        // لو القيمة تحتوي بالفعل على مسار كامل (تشمل مجلداً، مثل service-providers/xxx.jpg)
+        // فهي مُخزَّنة بصيغتها الجديدة الصحيحة — لا نلمسها.
+        if (str_contains($this->image, '/')) {
+            return $this->image;
+        }
+        // القيمة القديمة اسم ملف فقط دون مجلد — نستخدم service-providers/ لأنه
+        // المجلد الفعلي الموجود على R2 حالياً (مجلد offers/ القديم غير موجود فعلياً).
+        return 'service-providers/' . $this->image;
     }
 
     use HasFactory;
