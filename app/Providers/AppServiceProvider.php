@@ -81,6 +81,8 @@ class AppServiceProvider extends ServiceProvider
     {
 
 
+
+    $this->configureR2FromBusinessSettings();
         if (class_exists(\App\Observers\EstateObserver::class)) {
             \App\Models\Estate::observe(\App\Observers\EstateObserver::class);
         }
