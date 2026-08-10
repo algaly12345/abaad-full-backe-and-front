@@ -14,7 +14,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form action="{{route('messages')}}" method="post" id="seller-chat-form">
+                <form action="{{ Route::has('messages') ? route('messages') : '#' }}" method="post" id="seller-chat-form">
                     @csrf
 
                     <input value="{{ isset($user_type) && $user_type == 'admin' ? 0 : $seller->id}}" name="vendor_id" hidden>
