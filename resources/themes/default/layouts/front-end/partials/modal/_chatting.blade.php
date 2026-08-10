@@ -21,7 +21,7 @@
                     <textarea name="message" class="form-control min-height-100px max-height-200px" required placeholder="{{ translate('Write_here') }}..."></textarea>
                     <br>
                     <div class="justify-content-end gap-2 d-flex flex-wrap">
-                        <a href="{{route('chat', ['type' => 'vendor'])}}" class="btn btn-soft-primary bg--secondary border">
+                        <a href="{{ Route::has('chat') ? route('chat', ['type' => 'vendor']) : '#' }}" class="btn btn-soft-primary bg--secondary border">
                             {{translate('go_to_chatbox')}}
                         </a>
                         <button class="btn btn--primary text-white">{{translate('send')}}</button>
