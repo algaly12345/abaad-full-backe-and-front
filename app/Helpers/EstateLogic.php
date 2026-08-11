@@ -363,7 +363,13 @@ $agent = Agent::where('user_id', $item->user_id)->first();
         $data["price_negotiation"]=$estate->price_negotiation;
         $data["build_space"]=$estate->build_space;
         $data['document_number']=$estate->document_number;
-        $data['users']=$estate->users;
+        $data['users'] = $estate->users ?? (object)[
+            'id' => null,
+            'name' => '-',
+            'phone' => '',
+            'image' => null,
+            'membership_type' => '0',
+        ];
         $data['category_id']=$estate->category_id;
         $data['estate_type']=$estate->estate_type;
         $data['authorization_number']=$estate->authorization_number;
