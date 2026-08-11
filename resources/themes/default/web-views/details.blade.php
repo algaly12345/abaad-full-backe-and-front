@@ -1564,11 +1564,11 @@ body {
             <div class="seller-cover"></div>
             <div class="seller-body text-center">
                 <img class="seller-avatar"
-                     src="{{ $estate['users']['image'] ? asset('storage/app/public/profile/' . $estate['users']['image']) : asset('storage/app/public/profile/default_avatar.png') }}"
+                     src="{{ $estate['users']->image ? asset('storage/app/public/profile/' . $estate['users']->image) : asset('storage/app/public/profile/default_avatar.png') }}"
                      onerror="this.src='{{ asset('storage/app/public/profile/default_avatar.png') }}'">
 
-                <div class="seller-name">{{ $estate['users']['name'] ?? '-' }}</div>
-                <div class="seller-phone">{{ $estate['users']['phone'] ?? '-' }}</div>
+                <div class="seller-name">{{ $estate['users']->name ?? '-' }}</div>
+                <div class="seller-phone">{{ $estate['users']->phone ?? '-' }}</div>
 
                 <div class="seller-metrics">
                     <div class="seller-metric">
@@ -1577,7 +1577,7 @@ body {
                     </div>
                     <div class="seller-metric">
                         <span class="k">العضوية</span>
-                        <div class="v">{{ $estate['users']['membership_type'] ?? '0' }}</div>
+                        <div class="v">{{ $estate['users']->membership_type ?? '0' }}</div>
                     </div>
                 </div>
 
@@ -1588,12 +1588,12 @@ body {
                         </button>
                     @endif
 
-                    <a class="cta-secondary" href="tel:{{ $estate['users']['phone'] }}">
+                    <a class="cta-secondary" href="tel:{{ $estate['users']->phone }}">
                         <i class="fa-solid fa-phone"></i> اتصال مباشر
                     </a>
 
                     <a class="cta-secondary cta-whatsapp" target="_blank"
-                       href="https://wa.me/{{ $estate['users']['phone'] }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
+                       href="https://wa.me/{{ $estate['users']->phone }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
                         <i class="fa-brands fa-whatsapp"></i> واتساب
                     </a>
 
@@ -1719,22 +1719,22 @@ body {
             <!--    <i class="fa-solid fa-comments d-block mb-1" style="font-size:1.1rem;"></i>دردشة-->
             <!--</button>-->
             
-             <a href="tel:{{ $estate['users']['phone'] }}" class="mbar-call">
+             <a href="tel:{{ $estate['users']->phone }}" class="mbar-call">
                 <i class="fa-solid fa-phone d-block mb-1" style="font-size:1.1rem;"></i>اتصال
             </a>
             
             
             
              <a class="mbar-wa" target="_blank"
-           href="https://wa.me/{{ $estate['users']['phone'] }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
+           href="https://wa.me/{{ $estate['users']->phone }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">
             <i class="fa-brands fa-whatsapp d-block mb-1" style="font-size:1.1rem;"></i>واتساب
         </a>
         
-        <!--<a class="mbar-call" href="tel:{{ $estate['users']['phone'] }}">-->
+        <!--<a class="mbar-call" href="tel:{{ $estate['users']->phone }}">-->
         <!--    <i class="fa-solid fa-phone d-block mb-1" style="font-size:1.1rem;"></i>اتصال-->
         <!--</a>-->
         <!--<a class="mbar-wa" target="_blank"-->
-        <!--   href="https://wa.me/{{ $estate['users']['phone'] }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">-->
+        <!--   href="https://wa.me/{{ $estate['users']->phone }}?text={{ urlencode('السلام عليكم أرغب في التواصل بخصوص العرض العقاري من منصة أبعاد. رابط العقار: ' . url()->current()) }}">-->
         <!--    <i class="fa-brands fa-whatsapp d-block mb-1" style="font-size:1.1rem;"></i>واتساب-->
         <!--</a>-->
     </div>
