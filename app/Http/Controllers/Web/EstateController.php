@@ -175,9 +175,9 @@ public function get_details($id)
     
  
 
-    $agent = Agent::where('user_id', $restaurant->users->id)->first();
+    $agent = Agent::where('user_id', $restaurant->users?->id)->first();
     $count = Estate::select("view")->where('id', $id)->first();
-    $userInfo = User::where("id", $restaurant->users->id)->first();
+    $userInfo = User::where("id", $restaurant->users?->id)->first();
   
     
                 return view('web-views.details', compact('estate', 'userInfo','agent'));
