@@ -171,6 +171,10 @@ class EstateController extends Controller
 public function get_details($id)
 {
     $restaurant = EstateLogic::get_estate_details($id);
+
+    if (!$restaurant) {
+        abort(404, 'هذا العقار غير موجود أو تم حذفه');
+    }
     $estate = EstateLogic::estate_details_formatting($restaurant);
     
  
