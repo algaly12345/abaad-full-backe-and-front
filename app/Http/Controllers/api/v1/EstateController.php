@@ -220,6 +220,10 @@ public function mapList(Request $request, $filter_data = "all")
     {
         $restaurant = EstateLogic::get_estate_details($id);
 
+        if (!$restaurant) {
+            return response()->json(['message' => 'هذا العقار غير موجود أو تم حذفه'], 404);
+        }
+
         $estate= EstateLogic::estate_details_formatting($restaurant);
         $count  =  Estate::select("view")->where('id', '=', $id)->first();
 
