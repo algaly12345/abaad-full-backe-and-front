@@ -39,6 +39,7 @@ class ServiceManagementController extends Controller
         $offer = Offer::create([
             'title'           => $request->validated('title'),
             'description'     => $request->validated('description'),
+            'address'         => $request->validated('address'),
             'offer_type'       => $request->validated('offer_type'),
             'service_price'   => $request->validated('service_price'),
             'discount'        => $request->validated('discount'),
@@ -109,6 +110,7 @@ class ServiceManagementController extends Controller
         $offer->update([
             'title'           => $request->validated('title'),
             'description'     => $request->validated('description'),
+            'address'         => $request->validated('address'),
             'offer_type'      => $request->validated('offer_type'),
             'service_price'   => $request->validated('service_price'),
             'discount'        => $request->validated('discount'),

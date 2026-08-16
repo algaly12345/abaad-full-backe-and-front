@@ -77,38 +77,14 @@ class AppServiceProvider extends ServiceProvider
     // }
 
 
-    private function configureR2FromBusinessSettings()
-    {
-        try {
-            $accessKey = \App\Models\BusinessSetting::where('type', 'r2_access_key_id')->first();
-            $secretKey = \App\Models\BusinessSetting::where('type', 'r2_secret_access_key')->first();
-            $bucket = \App\Models\BusinessSetting::where('type', 'r2_bucket')->first();
-            $accountId = \App\Models\BusinessSetting::where('type', 'r2_account_id')->first();
-
-            if ($accessKey && $secretKey && $bucket && $accountId) {
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.key', $accessKey->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.secret', $secretKey->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.bucket', $bucket->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.s3.endpoint', 'https://' . $accountId->value . '.r2.cloudflarestorage.com');
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.key', $accessKey->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.secret', $secretKey->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.bucket', $bucket->value);
-                \Illuminate\Support\Facades\Config::set('filesystems.disks.public.endpoint', 'https://' . $accountId->value . '.r2.cloudflarestorage.com');
-            }
-        } catch (\Throwable $e) {
-            // تجاهل بأمان لو فشل الاتصال بقاعدة البيانات وقت الإقلاع
-        }
-    }
-
     public function boot()
     {
+        $this->configureR2FromBusinessSettings();
 
-
-
-    $this->configureR2FromBusinessSettings();
         if (class_exists(\App\Observers\EstateObserver::class)) {
             \App\Models\Estate::observe(\App\Observers\EstateObserver::class);
         }
+
 
         if (class_exists(\App\Observers\OfferObserver::class)) {
             Offer::observe(OfferObserver::class);
@@ -126,8 +102,8 @@ class AppServiceProvider extends ServiceProvider
             ServiceProviderSubscription::observe(ServiceProviderSubscriptionObserver::class);
         }
 
-        \Illuminate\Support\Facades\URL::forceScheme('https');
 
+            
         if (!App::runningInConsole()) {
             Paginator::useBootstrap();
 
@@ -179,7 +155,7 @@ class AppServiceProvider extends ServiceProvider
 
 
 
-'r2_public_url' => getWebConfig('r2_public_url'),
+
 
                         'web_logo' => getWebConfig('company_web_logo'),
                         'mob_logo' => getWebConfig( 'company_mobile_logo'),
@@ -274,5 +250,42 @@ class AppServiceProvider extends ServiceProvider
 
 
 
+    }
+
+    /**
+     * بيانات اعتماد ورابط Cloudflare R2 تُقرأ من business_settings بدل .env مباشرة،
+     * حتى يمكن تحديثها مستقبلًا (مثلاً من لوحة تحكم) بدون تعديل الملف أو إعادة النشر.
+     * تعمل أيضاً أثناء أوامر artisan/الطابور، وليست مقصورة على طلبات الويب فقط —
+     * لذلك هي خارج كتلة (!App::runningInConsole()) أدناه.
+     */
+    private function configureR2FromBusinessSettings(): void
+    {
+        try {
+            if (!Schema::hasTable('business_settings')) {
+                return;
+            }
+
+            $accessKey = Helpers::get_business_settings('r2_access_key_id');
+            $secretKey = Helpers::get_business_settings('r2_secret_access_key');
+            $bucket    = Helpers::get_business_settings('r2_bucket');
+            $accountId = Helpers::get_business_settings('r2_account_id');
+            $publicUrl = Helpers::get_business_settings('r2_public_url');
+
+            if (!$accessKey || !$secretKey || !$bucket || !$accountId) {
+                return;
+            }
+
+            Config::set('filesystems.disks.public.key', $accessKey);
+            Config::set('filesystems.disks.public.secret', $secretKey);
+            Config::set('filesystems.disks.public.bucket', $bucket);
+            Config::set('filesystems.disks.public.endpoint', "https://{$accountId}.r2.cloudflarestorage.com");
+
+            if ($publicUrl) {
+                Config::set('filesystems.disks.public.url', $publicUrl);
+            }
+        } catch (\Exception $exception) {
+            // فشل القراءة من business_settings (مثلاً أثناء أول migrate قبل وجود الجدول)
+            // يُبقي إعدادات .env كما هي بدل كسر التطبيق.
+        }
     }
 }

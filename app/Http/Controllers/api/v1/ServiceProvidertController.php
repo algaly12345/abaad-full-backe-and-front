@@ -9,6 +9,7 @@ use App\Models\EstateOffer;
 use App\Models\ServiceProviderSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class ServiceProvidertController extends Controller
 {
@@ -170,6 +171,36 @@ class ServiceProvidertController extends Controller
     }
 
     /**
+     * POST /api/v1/provider-subscriptions/update-business-info
+     * حفظ عنوان عمل مزوّد الخدمة — يُستدعى من CompleteProviderProfileScreen
+     * بالتطبيق عند إضافة مزوّد الخدمة أول عرض له وبياناته ناقصة. المنطقة
+     * والموقع الجغرافي (zone_id/latitude/longitude) استُبعدا من هذه الشاشة
+     * بناءً على طلب صريح، فبقيا اختياريين هنا (تُدخَل فقط من لوحة الأدمن).
+     */
+    public function updateBusinessInfo(Request $request)
+    {
+        $data = $request->validate([
+            'address' => 'required|string',
+            'zone_id' => 'nullable|exists:zones,id',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+
+        $user = auth()->user();
+        $user->provider()->firstOrCreate(['user_id' => $user->id]);
+
+        $this->serviceProviderService->updateProviderBusinessInfo($data, $user);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم حفظ بيانات النشاط بنجاح',
+            'data' => $user->provider->fresh()->only([
+                'address', 'zone_id', 'latitude', 'longitude',
+            ]),
+        ], 200);
+    }
+
+    /**
      * POST /api/v1/provider-subscriptions/store-offer
      * إنشاء العرض والاشتراك. الرد يحتوي payment_url لفتحه في WebView.
      */
@@ -224,5 +255,46 @@ class ServiceProvidertController extends Controller
                 'is_paid'              => $subscription->payment_status === 'paid',
             ],
         ]);
+    }
+
+    /**
+     * GET /api/v1/provider-subscriptions/{subscription_number}/resume-payment
+     * يولّد رابط دفع موقّع جديد (صالح لساعتين) لاشتراك لم يُدفع بعد أو فشل
+     * دفعه — يُستخدم من "ادفع الآن" في شاشة تفاصيل الخدمة، بديلاً عن رابط
+     * الدفع الأصلي الذي ينتهي صلاحيته بعد ساعتين من إنشاء العرض.
+     */
+    public function resumePayment($subscriptionNumber)
+    {
+        $subscription = ServiceProviderSubscription::where('subscription_number', $subscriptionNumber)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (! $subscription) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'الاشتراك غير موجود',
+            ], 404);
+        }
+
+        if ($subscription->payment_status === 'paid') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'تم دفع هذا الاشتراك مسبقًا',
+            ], 422);
+        }
+
+        $paymentUrl = URL::temporarySignedRoute(
+            'payment.provider-subscription.show',
+            now()->addHours(2),
+            ['subscription' => $subscription->id]
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'subscription_number' => $subscription->subscription_number,
+                'payment_url' => $paymentUrl,
+            ],
+        ], 200);
     }
 }

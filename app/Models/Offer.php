@@ -32,7 +32,7 @@ class Offer extends Model
     public const DISCOUNT_TYPE_PERCENTAGE = 'percentage';
     public const DISCOUNT_TYPE_FIXED = 'fixed';
 
-    protected $fillable = ['title','offer_owner','image','expiry_date','service_price','description','discount','discount_type','service_type_id','offer_type','offer','phone_provider','pending','status','latitude','longitude'];
+    protected $fillable = ['title','offer_owner','image','expiry_date','service_price','description','discount','discount_type','service_type_id','offer_type','offer','phone_provider','pending','status','latitude','longitude','address'];
 
     public function serviceProviders()
     {
@@ -254,5 +254,15 @@ class Offer extends Model
             $q->where('title', 'like', "%{$term}%")
               ->orWhere('description', 'like', "%{$term}%");
         });
+    }
+
+
+
+
+
+
+    public function latestSubscription()
+    {
+        return $this->hasOne(ServiceProviderSubscription::class, 'offer_id')->latestOfMany();
     }
 }

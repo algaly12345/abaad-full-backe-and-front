@@ -145,6 +145,10 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('notifications', [NotificationController::class, 'get_notifications']);
         Route::post('update-profile', [CustomerController::class, 'update_profile']);
         Route::get('info', [CustomerController::class, 'info']);
+        // ربط رقم جوال جديد بحساب مصادَق (مثلاً مزوّد خدمة دخل عبر جوجل/فيسبوك
+        // وبقي users.phone فارغًا) — من CompleteProviderProfileScreen بالتطبيق.
+        Route::post('phone/send-otp', [CustomerAuthController::class, 'sendPhoneOtp']);
+        Route::post('phone/verify-otp', [CustomerAuthController::class, 'verifyPhoneOtp']);
         Route::post('complete-agent', [AgentController::class, 'complete_agent']);
         Route::post('cm-firebase-token', [CustomerController::class, 'update_cm_firebase_token']);
         Route::get('my-estate', [CustomerController::class, 'info_by_id']);
@@ -222,7 +226,13 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         // (ServiceOfferResource::providers.image) — لا علاقة له بصورة العرض
         // نفسها (store-offer) ولا بصورة حساب المستخدم العامة (customer/update-profile).
         Route::post('update-logo', [ServiceProvidertController::class, 'updateLogo']);
+        // حفظ بيانات عمل مزوّد الخدمة (العنوان/المنطقة/الموقع الجغرافي) من
+        // CompleteProviderProfileScreen عند إضافة أول عرض وبياناته ناقصة.
+        Route::post('update-business-info', [ServiceProvidertController::class, 'updateBusinessInfo']);
         Route::get('{subscription_number}/status', [ServiceProvidertController::class, 'getSubscriptionStatus']);
+        // يولّد رابط دفع موقّع جديد لاشتراك غير مدفوع (unpaid/failed) بعد
+        // انتهاء صلاحية الرابط الأصلي (ساعتان) — "ادفع الآن" في التطبيق.
+        Route::get('{subscription_number}/resume-payment', [ServiceProvidertController::class, 'resumePayment']);
     });
 
     Route::group(['prefix' => 'service-provider', 'middleware' => 'auth:api'], function () {

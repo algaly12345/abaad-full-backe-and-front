@@ -22,6 +22,10 @@ class StoreOfferRequest extends FormRequest
             'service_price' => 'nullable|numeric|required_if:offer_type,price',
             'discount' => 'nullable|numeric|required_if:offer_type,discount',
             'description' => 'required|string',
+            // عنوان تفصيلي حرّ اختياري (مثل "خميس مشيط - حي المروج") — أدق من
+            // zones فقط، لا يُطلَب لأن العروض القديمة (والمزوّدين اللي ما يعرفون
+            // حيّهم بالضبط) يجب أن تبقى قابلة للإنشاء بدونه.
+            'address' => 'nullable|string|max:255',
             'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
 
             'service_plan_id' => 'required|exists:service_plans,id',

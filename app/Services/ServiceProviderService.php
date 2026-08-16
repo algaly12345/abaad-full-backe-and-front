@@ -74,10 +74,24 @@ class ServiceProviderService
     }
 
     /**
+     * يحدّث بيانات عمل مزوّد الخدمة — تُستدعى من شاشة استكمال البيانات
+     * (CompleteProviderProfileScreen) عند إضافة مزوّد الخدمة أول عرض له
+     * وبياناته ناقصة. zone_id/latitude/longitude اختيارية (لا تجمعها هذه
+     * الشاشة حاليًا) فتُحدَّث فقط إن وردت.
+     */
+    public function updateProviderBusinessInfo(array $data, $user): void
+    {
+        $user->provider?->update(array_intersect_key(
+            $data,
+            array_flip(['address', 'zone_id', 'latitude', 'longitude'])
+        ));
+    }
+
+    /**
      * إنشاء العرض والاشتراك المالي، ثم توليد رابط دفع موقّع (Signed URL)
      * صالح لمدة محدودة، يستخدمه التطبيق مباشرة داخل WebView.
      */
-   public function createOfferAndSubscription(array $data, $user, $imageFile): array
+    public function createOfferAndSubscription(array $data, $user, $imageFile): array
     {
         return DB::transaction(function () use ($data, $user, $imageFile) {
             $plan = ServicePlan::findOrFail($data['service_plan_id']);
@@ -109,10 +123,6 @@ class ServiceProviderService
                     // عرض أو اشتراك بصورة فاسدة — storeOfferAPI يلتقطه ويُعيد 500 واضح.
                     throw new \RuntimeException('فشل رفع صورة الخدمة، يرجى المحاولة لاحقًا');
                 }
-                // يُحفَظ اسم الملف فقط في offers.image (بدون بادئة "service-providers/")
-                // — المجلد ثابت ومعروف مسبقاً فيُعاد بناؤه عند القراءة
-                // (راجع ServiceOfferResource::toArray) بدل تكراره في كل سجل.
-                $image = basename($image);
             }
 
             $expiryDate = Carbon::now()->addMonths($duration)->format('Y-m-d');
@@ -130,6 +140,7 @@ class ServiceProviderService
                 'phone_provider' => $user->phone ?? '',
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
+                'address' => $data['address'] ?? null,
             ]);
 
             $offer->serviceProviders()->attach($user->id);
