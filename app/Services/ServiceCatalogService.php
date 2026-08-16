@@ -182,11 +182,21 @@ class ServiceCatalogService
                 'id', 'title', 'image', 'expiry_date', 'service_price', 'discount',
                 'offer_type', 'description', 'service_type_id', 'status',
                 'offer_owner', 'phone_provider', 'created_at',
+                'latitude', 'longitude', 'address',
             ])
             ->with([
                 'categories:id,name,name_ar',
                 'zones:id,name,name_ar',
                 'serviceType:id,name',
+                // بلا تقييد أعمدة (بخلاف بقية علاقات with() هنا): تقييد الأعمدة هنا
+                // (id,offer_id,...) يسبّب "Column 'offer_id' in field list is
+                // ambiguous" عند دمجه مع hasOne->latestOfMany() — الاستعلام
+                // المولّد يربط جدول service_provider_subscriptions بنفسه عبر
+                // subquery باسم عمود offer_id في الطريقين، فيصبح غامضاً فقط عندما
+                // نحدّد SELECT صريح. سبب هذا اختفاء في خدمات المتاجر العام
+                // (500 على /services بسبب استثناء SQL غير معالج) — تم رصده
+                // وإصلاحه بإزالة تقييد الأعمدة.
+                'latestSubscription',
                 'serviceProviders' => function ($q) {
                     $q->select(
                         'users.id', 'users.name', 'users.phone', 'users.snapchat',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use App\Models\ServiceProviderSubscription;
@@ -32,7 +33,7 @@ class MoyasarPaymentController extends Controller
             'subscription'  => $subscription,
             'amount'        => $amount,
             'amountHalalas' => (int) round($amount * 100), // Moyasar يطلب المبلغ بالهللة
-            'publicKey'     => config('services.moyasar.public_key'),
+            'publicKey'     => $this->publicKey(),
             'callbackUrl'   => $callbackUrl,
         ]);
     }
@@ -53,7 +54,7 @@ class MoyasarPaymentController extends Controller
             ]);
         }
 
-        $response = Http::withBasicAuth(config('services.moyasar.secret_key'), '')
+        $response = Http::withBasicAuth($this->secretKey(), '')
             ->get("https://api.moyasar.com/v1/payments/{$paymentId}");
 
         if (! $response->ok()) {
@@ -99,5 +100,27 @@ class MoyasarPaymentController extends Controller
             'success' => false,
             'message' => $payment['message'] ?? 'فشلت عملية الدفع',
         ]);
+    }
+
+    /**
+     * المفتاح السري يُقرأ أولاً من business_settings (قابل للتعديل مباشرة
+     * من قاعدة البيانات دون الحاجة لتعديل .env)، ويسقط احتياطياً على
+     * .env إن لم يكن الصف موجوداً أو كانت قيمته فارغة.
+     */
+    private function secretKey(): ?string
+    {
+        $value = Helpers::get_business_settings('moyasar_secret_key');
+
+        return filled($value) ? $value : config('services.moyasar.secret_key');
+    }
+
+    /**
+     * نفس منطق secretKey() — يقرأ من business_settings أولاً، ثم .env احتياطياً.
+     */
+    private function publicKey(): ?string
+    {
+        $value = Helpers::get_business_settings('moyasar_public_key');
+
+        return filled($value) ? $value : config('services.moyasar.public_key');
     }
 }
