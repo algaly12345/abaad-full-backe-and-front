@@ -30,7 +30,7 @@ class ServiceOfferResource extends JsonResource
             // كامل — الصور القديمة تحت offers/ والجديدة تحت service-providers/، وكل
             // سجل يحمل مجلده الفعلي فلا حاجة لأي تخمين هنا. النطاق نفسه يأتي من
             // business_settings (r2_public_url) بدل .env مباشرة.
-            'image'         => $this->image ? $this->r2BaseUrl() . '/' . $this->image : null,
+            'image'         => $this->offerImagePath() ? $this->r2BaseUrl() . '/' . $this->offerImagePath() : null,
             'offer_type'    => $this->offer_type,
             'service_price' => $this->service_price !== null ? (float) $this->service_price : null,
             'discount'      => $this->discount !== null ? (float) $this->discount : null,
