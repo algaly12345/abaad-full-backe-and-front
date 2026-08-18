@@ -32,7 +32,7 @@ class Offer extends Model
     public const DISCOUNT_TYPE_PERCENTAGE = 'percentage';
     public const DISCOUNT_TYPE_FIXED = 'fixed';
 
-    protected $fillable = ['title','offer_owner','image','expiry_date','service_price','description','discount','discount_type','service_type_id','offer_type','offer','phone_provider','pending','status','latitude','longitude','address'];
+    protected $fillable = ['title','offer_owner','image','expiry_date','service_price','description','discount','discount_type','service_type_id','offer_type','offer','phone_provider','contact_phone','contact_type','pending','status','latitude','longitude','address'];
 
     public function serviceProviders()
     {

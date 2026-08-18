@@ -38,7 +38,7 @@ class UpdateServiceRequest extends FormRequest
             'description' => 'required|string',
             'address'     => 'nullable|string|max:255',
             'expiry_date' => 'required|date',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,gif,webp',
 
             'categories'   => 'required|array|min:1',
             'categories.*' => 'integer|exists:categories,id',

@@ -138,15 +138,19 @@ class ServiceProviderService
                 'offer_owner' => 'me',
                 'image' => $image,
                 'phone_provider' => $user->phone ?? '',
+                'contact_phone' => $data['contact_phone'],
+                'contact_type' => $data['contact_type'],
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'address' => $data['address'] ?? null,
             ]);
 
-            $offer->serviceProviders()->attach($user->id);
+            $offer->serviceProviders()->attach($user->id, ['status' => 'accept']);
             $offer->categories()->attach($data['categories']);
             $offer->zones()->attach($data['zones']);
             $offer->updateOfferStatusToSended();
+
+            ServiceCatalogService::flushCache();
 
             $subscriptionNumber = 'SUB-' . strtoupper(uniqid());
 

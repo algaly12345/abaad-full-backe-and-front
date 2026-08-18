@@ -181,7 +181,7 @@ class ServiceCatalogService
             ->select([
                 'id', 'title', 'image', 'expiry_date', 'service_price', 'discount',
                 'offer_type', 'description', 'service_type_id', 'status',
-                'offer_owner', 'phone_provider', 'created_at',
+                'offer_owner', 'phone_provider', 'contact_phone', 'contact_type', 'created_at',
                 'latitude', 'longitude', 'address',
             ])
             ->with([

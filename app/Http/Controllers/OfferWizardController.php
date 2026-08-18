@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
 use App\Helpers\FileUploder;
+use App\Services\ServiceCatalogService;
 class OfferWizardController extends Controller
 {
     public function stepOne()
@@ -331,11 +332,13 @@ class OfferWizardController extends Controller
             'phone_provider' => $finalPhone
         ]);
 
-        $offer->serviceProviders()->attach($userId);
+        $offer->serviceProviders()->attach($userId, ['status' => 'accept']);
 
         $offer->categories()->attach($request->categories);
         $offer->zones()->attach($request->zones);
         $offer->updateOfferStatusToSended();
+
+        ServiceCatalogService::flushCache();
 
         $subscription_number = 'SUB-' . strtoupper(uniqid());
 

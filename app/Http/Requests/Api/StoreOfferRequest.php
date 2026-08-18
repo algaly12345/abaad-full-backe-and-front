@@ -26,7 +26,7 @@ class StoreOfferRequest extends FormRequest
             // zones فقط، لا يُطلَب لأن العروض القديمة (والمزوّدين اللي ما يعرفون
             // حيّهم بالضبط) يجب أن تبقى قابلة للإنشاء بدونه.
             'address' => 'nullable|string|max:255',
-            'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+            'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp',
 
             'service_plan_id' => 'required|exists:service_plans,id',
             'subscription_duration' => 'required|integer|in:1,3,6,12',
@@ -55,7 +55,6 @@ class StoreOfferRequest extends FormRequest
             'description.required' => 'وصف الخدمة مطلوب',
             'image.required' => 'صورة العرض مطلوبة',
             'image.image' => 'الملف المرفوع يجب أن يكون صورة',
-            'image.max' => 'حجم الصورة يجب ألا يتجاوز 2 ميجابايت',
             'service_plan_id.required' => 'الباقة المطلوبة غير صالحة',
             'service_plan_id.exists' => 'الباقة المحددة غير موجودة',
             'subscription_duration.in' => 'مدة الاشتراك غير صالحة',

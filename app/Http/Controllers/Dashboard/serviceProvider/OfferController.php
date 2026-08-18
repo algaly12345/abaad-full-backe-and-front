@@ -11,6 +11,7 @@ use App\Models\ServicePlan;
 use App\Models\ServiceProviderSubscription;
 use App\Models\ServiceType;
 use App\Models\Zone;
+use App\Services\ServiceCatalogService;
 use App\Shop;
 use Database\Seeders\ServiceProviderSubscriptionSeeder;
 use Illuminate\Http\Request;
@@ -87,10 +88,12 @@ class OfferController extends Controller
             'phone_provider'=>"".auth()->guard('user')->user()->phone.""
         ]);
 
-        $offer->serviceProviders()->attach(auth()->guard('user')->user()->id);
+        $offer->serviceProviders()->attach(auth()->guard('user')->user()->id, ['status' => 'accept']);
         $offer->categories()->attach($request->categories);
         $offer->zones()->attach($request->zones);
         $offer->updateOfferStatusToSended();
+
+        ServiceCatalogService::flushCache();
 
         $subscription_number = 'SUB-' . strtoupper(uniqid());
         ServiceProviderSubscription::create([
@@ -320,4 +323,3 @@ class OfferController extends Controller
 
         return view('service-provider.offers.pending-owner-offers', compact('offers'));
     }
-}

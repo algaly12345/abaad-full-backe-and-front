@@ -153,7 +153,7 @@ class ServiceProvidertController extends Controller
     public function updateLogo(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|max:2048',
+            'image' => 'required|image',
         ]);
 
         $user = auth()->user();

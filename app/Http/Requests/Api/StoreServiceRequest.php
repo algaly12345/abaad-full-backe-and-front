@@ -38,7 +38,7 @@ class StoreServiceRequest extends FormRequest
             'description' => 'required|string',
             'address'     => 'nullable|string|max:255',
             'expiry_date' => 'required|date|after_or_equal:today',
-            'image'       => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+            'image'       => 'required|image|mimes:jpg,jpeg,png,gif,webp',
 
             'categories'   => 'required|array|min:1',
             'categories.*' => 'integer|exists:categories,id',
