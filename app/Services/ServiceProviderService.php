@@ -155,6 +155,7 @@ class ServiceProviderService
                 'offer_owner' => 'me',
                 'image' => $image,
                 'phone_provider' => $user->phone ?? '',
+                'contact_phone' => $data['contact_phone'] ?? $user->phone ?? '',
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'address' => $data['address'] ?? null,
