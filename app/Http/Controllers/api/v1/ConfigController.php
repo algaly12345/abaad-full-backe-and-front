@@ -143,5 +143,64 @@ public function geocode_api(Request $request)
         return $response->json();
     }
 
+    public function place_api_autocomplete(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'search_text' => 'required',
+        ]);
+
+        if ($validator->errors()->count() > 0) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+        $response = Http::get('https://maps.googleapis.com/maps/api/place/autocomplete/json?input=' . $request['search_text'] . '&key=AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4');
+        return $response->json();
+    }
+
+
+    public function place_api_details(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'placeid' => 'required',
+        ]);
+
+        if ($validator->errors()->count() > 0) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+        $response = Http::get('https://maps.googleapis.com/maps/api/place/details/json?placeid=' . $request['placeid'] . '&key=AIzaSyAFuZIjGVfo57sJk3EmCSV0SpP7qVgg7n4');
+        return $response->json();
+    }
+
+
+    public function get_zone(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'lat' => 'required',
+            'lng' => 'required',
+        ]);
+
+        if ($validator->errors()->count() > 0) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+        $point = new Point($request->lat, $request->lng);
+
+        $address = mb_strimwidth($request->address, 0, 8, '');
+        $user = Estate::where('national_address', $address)->first();
+
+        if ($user) {
+            return response()->json([
+                'errors' => [
+                    ['code' => 'coordinates', 'message' => 'messages.service_not_available_in_this_area']
+                ]
+            ], 404);
+        }
+
+        return response()->json([
+            'zone_id' => '[1,2]',
+            'zone_data' => [
+                ['id' => 2, 'status' => 1, 'minimum_shipping_charge' => 20, 'per_km_shipping_charge' => 30],
+                ['id' => 2, 'status' => 1, 'minimum_shipping_charge' => 20, 'per_km_shipping_charge' => 30]
+            ]
+        ], 200);
+    }
 
 }
