@@ -85,23 +85,21 @@ class ServiceProvidertController extends Controller
 
     /**
      * POST /api/v1/provider-subscriptions/calculate-price
-     * حساب السعر اللحظي حسب الباقة/المدة/عدد المناطق، بدون حفظ.
-     * Body: service_plan_id, subscription_duration, zones_count
+     * حساب السعر اللحظي حسب المدة وعدد المناطق/الأنواع المختارة، بدون حفظ.
+     * Body: subscription_duration, zones_count, categories_count
      */
     public function calculatePrice(Request $request)
     {
         $request->validate([
-            'service_plan_id' => 'required|exists:service_plans,id',
             'subscription_duration' => 'required|integer|in:1,3,6,12',
             'zones_count' => 'required|integer|min:0',
+            'categories_count' => 'required|integer|min:0',
         ]);
 
-        $plan = \App\Models\ServicePlan::find($request->service_plan_id);
-
         $pricing = $this->serviceProviderService->calculatePrice(
-            $plan,
             (int) $request->subscription_duration,
-            (int) $request->zones_count
+            (int) $request->zones_count,
+            (int) $request->categories_count
         );
 
         return response()->json([

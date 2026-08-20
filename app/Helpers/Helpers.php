@@ -166,61 +166,26 @@ class Helpers
     }
 
 
+    /**
+     * ملاحظة: كانت هذه الدالة تستدعي Legacy FCM HTTP API
+     * (https://fcm.googleapis.com/fcm/send) التي أوقفتها Google نهائيًا في
+     * يونيو 2024 (ترجع 404 دائمًا بغض النظر عن صحة المفتاح). استُبدل التنفيذ
+     * الداخلي بـ FCM v1 عبر App\Services\FcmV1Service مع إبقاء نفس التوقيع
+     * (٣ معاملات) حتى لا تحتاج نقاط الاستدعاء الحالية أي تعديل.
+     */
     public static function send_push_notif_to_topic($data, $topic, $type)
     {
-        $key = BusinessSetting::where(['type' => 'push_notification_key'])->first()->value;
+        $payload = $data;
+        $payload['type'] = $payload['type'] ?? $type;
+        $payload['is_read'] = $payload['is_read'] ?? 0;
 
-        $url = "https://fcm.googleapis.com/fcm/send";
-        $header = array(
-            "authorization: key=" . $key . "",
-            "content-type: application/json"
+        return \App\Services\FcmV1Service::sendToTopic(
+            $topic,
+            $payload,
+            $data['title'] ?? null,
+            $data['description'] ?? null,
+            $data['image'] ?? null
         );
-
-        if (isset($data['message'])) {
-            $message = $data['message'];
-        } else {
-            $message = '';
-        }
-
-        $postdata = '{
-                "to" : "/topics/' . $topic . '",
-                "mutable_content": true,
-                "data" : {
-                    "title":"' . $data['title'] . '",
-                    "body" : "' . $data['description'] . '",
-                    "image" : "' . $data['image'] . '",
-                    "is_read": 0,
-                    "type":"' . $type . '",
-                },
-                "notification" : {
-                    "title":"' . $data['title'] . '",
-                    "body" : "' . $data['description'] . '",
-                    "image" : "' . $data['image'] . '",
-                    "body_loc_key":"' . $type . '",
-                    "type":"' . $type . '",
-                    "is_read": 0,
-                    "icon" : "new",
-                    "sound": "notification.wav",
-                    "android_channel_id": "abaad"
-                  }
-            }';
-
-
-        $ch = curl_init();
-        $timeout = 120;
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-
-        // Get URL content
-        $result = curl_exec($ch);
-        // close handle to release resources
-        curl_close($ch);
-
-        return $result;
     }
 
 
@@ -278,83 +243,33 @@ class Helpers
     }
 
 
-        public static function send_push_notif_to_device($fcm_token, $data, $web_push_link = null)
+    /**
+     * ملاحظة: كانت هذه الدالة تستدعي Legacy FCM HTTP API (نفس السبب الموضّح
+     * أعلى send_push_notif_to_topic). استُبدل التنفيذ الداخلي بـ FCM v1 عبر
+     * App\Services\FcmV1Service مع إبقاء نفس التوقيع (٣ معاملات، $web_push_link
+     * اختياري) حتى لا تحتاج نقاط الاستدعاء الحالية أي تعديل.
+     */
+    public static function send_push_notif_to_device($fcm_token, $data, $web_push_link = null)
     {
-//        $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
-        $key ="AAAAUndb76A:APA91bF6RS488wQqUvNZdl7daQBdc3u6yA5b52DJU9rdUh3G69NdArEMkCdbC571pNijnv3BCNrtqfw4l_z5lMjDGCwWQgiu0mIw1DOv3zZa7JtsFrNIX5c5o5VUMKf_UfpsMpUtwNO5";
-        $url = "https://fcm.googleapis.com/fcm/send";
-        $header = array(
-            "authorization: key=" . $key . "",
-            "content-type: application/json"
+        $payload = [
+            'order_id' => $data['order_id'] ?? '',
+            'type' => $data['type'] ?? '',
+            'conversation_id' => $data['conversation_id'] ?? '',
+            'sender_type' => $data['sender_type'] ?? '',
+            'order_type' => $data['order_type'] ?? '',
+            'is_read' => 0,
+        ];
+        if ($web_push_link) {
+            $payload['click_action'] = $web_push_link;
+        }
+
+        return \App\Services\FcmV1Service::sendToToken(
+            $fcm_token,
+            $payload,
+            $data['title'] ?? null,
+            $data['description'] ?? null,
+            $data['image'] ?? null
         );
-
-        if(isset($data['conversation_id'])){
-            $conversation_id = $data['conversation_id'];
-        }else{
-            $conversation_id = '';
-        }
-        if(isset($data['sender_type'])){
-            $sender_type = $data['sender_type'];
-        }else{
-            $sender_type = '';
-        }
-        if(isset($data['order_type'])){
-            $order_type = $data['order_type'];
-        }else{
-            $order_type = '';
-        }
-
-        $click_action = "";
-        if($web_push_link){
-            $click_action = ',
-            "click_action": "'.$web_push_link.'"';
-        }
-
-        $postdata = '{
-            "to" : "' . $fcm_token . '",
-            "mutable_content": true,
-            "data" : {
-                "title":"' . $data['title'] . '",
-                "body" : "' . $data['description'] . '",
-                "image" : "' . $data['image'] . '",
-                "order_id":"' . $data['order_id'] . '",
-                "type":"' . $data['type'] . '",
-                "conversation_id":"' . $conversation_id . '",
-                "sender_type":"' . $sender_type . '",
-                "order_type":"' . $order_type . '",
-                "is_read": 0
-            },
-            "notification" : {
-                "title" :"' . $data['title'] . '",
-                "body" : "' . $data['description'] . '",
-                "image" : "' . $data['image'] . '",
-                "order_id":"' . $data['order_id'] . '",
-                "title_loc_key":"' . $data['order_id'] . '",
-                "body_loc_key":"' . $data['type'] . '",
-                "type":"' . $data['type'] . '",
-                "is_read": 0,
-                "icon" : "new",
-                "sound": "notification.wav",
-                "android_channel_id": "stackfood"
-                '.$click_action.'
-            }
-        }';
-
-        $ch = curl_init();
-        $timeout = 120;
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-
-        // Get URL content
-        $result = curl_exec($ch);
-        // close handle to release resources
-        curl_close($ch);
-
-        return $result;
     }
 
 

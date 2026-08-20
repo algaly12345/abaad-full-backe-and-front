@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Enums\ProviderRole;
 use App\Models\User;
+use App\Services\ProviderPushNotifier;
 
 /**
  * يضمن أن كل حساب من نوع "provider" يحصل تلقائيًا على دور ProviderRole::PROVIDER
@@ -32,6 +33,20 @@ class UserObserver
     public function updated(User $user): void
     {
         $this->ensureProviderRole($user);
+        $this->notifyAccountStatus($user);
+    }
+
+    private function notifyAccountStatus(User $user): void
+    {
+        if (!$user->wasChanged('is_active') || !$user->isProvider()) {
+            return;
+        }
+
+        if ($user->is_active === 'active') {
+            ProviderPushNotifier::notify($user, 'account_status', 'تم تفعيل حسابك', 'أصبح حسابك مفعّلاً، يمكنك المتابعة.');
+        } else {
+            ProviderPushNotifier::notify($user, 'account_status', 'تم تعطيل حسابك', 'تم تعطيل حسابك من قِبل الإدارة.');
+        }
     }
 
     private function ensureProviderRole(User $user): void

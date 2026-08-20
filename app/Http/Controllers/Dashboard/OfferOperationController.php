@@ -8,6 +8,7 @@ use App\Models\ServiceProvider;
 use App\Models\User;
 use App\Models\Zone;
 use App\Notifications\OfferNotification;
+use App\Services\ProviderPushNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -44,6 +45,15 @@ class OfferOperationController extends Controller
             $offer->updateOfferStatusToSended();
 
             Notification::send($users, new OfferNotification($offer));
+            foreach ($users as $providerUser) {
+                ProviderPushNotifier::notify(
+                    $providerUser,
+                    'offer_status',
+                    'عرض جديد بانتظارك',
+                    $offer->title,
+                    $offer->id
+                );
+            }
             DB::commit();
             toastr()->success('بنجاح', 'تم أرسال العرض');
             return to_route('offers.index');

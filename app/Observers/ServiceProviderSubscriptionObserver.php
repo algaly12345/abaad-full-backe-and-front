@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\ServiceProviderSubscription;
+use App\Services\ProviderPushNotifier;
 use App\Services\ReferralCommissionService;
 
 /**
@@ -18,10 +19,33 @@ class ServiceProviderSubscriptionObserver
             return;
         }
 
+        $this->notifyPaymentStatus($subscription);
+
         if ($subscription->payment_status === 'paid') {
             return;
         }
 
         (new ReferralCommissionService())->cancelCommissionForSubscription($subscription);
+    }
+
+    private function notifyPaymentStatus(ServiceProviderSubscription $subscription): void
+    {
+        if ($subscription->payment_status === 'paid') {
+            ProviderPushNotifier::notify(
+                $subscription->user,
+                'subscription_status',
+                'تم تفعيل اشتراكك',
+                'تم الدفع بنجاح وتفعيل اشتراكك.',
+                $subscription->offer_id
+            );
+        } elseif ($subscription->payment_status === 'failed') {
+            ProviderPushNotifier::notify(
+                $subscription->user,
+                'subscription_status',
+                'فشلت عملية الدفع',
+                'لم تكتمل عملية دفع اشتراكك، حاول مرة أخرى.',
+                $subscription->offer_id
+            );
+        }
     }
 }

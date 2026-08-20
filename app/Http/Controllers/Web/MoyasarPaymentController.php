@@ -82,7 +82,13 @@ class MoyasarPaymentController extends Controller
             $subscription->save();
 
             if ($subscription->offer_id) {
-                Offer::where('id', $subscription->offer_id)->update(['status' => 'accept']);
+                // fetch+save بدل mass update عبر query builder، حتى يمر التغيير عبر
+                // save() ويُطلق OfferObserver (mass update لا يُطلق أحداث Eloquent إطلاقًا).
+                $offer = Offer::find($subscription->offer_id);
+                if ($offer) {
+                    $offer->status = 'accept';
+                    $offer->save();
+                }
             }
 
             (new ReferralCommissionService())->createCommissionForPaidSubscription($subscription);

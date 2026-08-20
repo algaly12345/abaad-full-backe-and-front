@@ -28,7 +28,6 @@ class StoreOfferRequest extends FormRequest
             'address' => 'nullable|string|max:255',
             'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp',
 
-            'service_plan_id' => 'required|exists:service_plans,id',
             'subscription_duration' => 'required|integer|in:1,3,6,12',
 
             'categories' => 'required|array|min:1',
@@ -55,39 +54,12 @@ class StoreOfferRequest extends FormRequest
             'description.required' => 'وصف الخدمة مطلوب',
             'image.required' => 'صورة العرض مطلوبة',
             'image.image' => 'الملف المرفوع يجب أن يكون صورة',
-            'service_plan_id.required' => 'الباقة المطلوبة غير صالحة',
-            'service_plan_id.exists' => 'الباقة المحددة غير موجودة',
             'subscription_duration.in' => 'مدة الاشتراك غير صالحة',
             'categories.required' => 'يجب اختيار نوع عقار واحد على الأقل',
             'zones.required' => 'يجب اختيار منطقة واحدة على الأقل',
             'latitude.required' => 'يجب تحديد موقع الخدمة على الخارطة',
             'longitude.required' => 'يجب تحديد موقع الخدمة على الخارطة',
         ];
-    }
-
-    /**
-     * قاعدة تحقق إضافية تطابق منطق الواجهة بالجافاسكريبت:
-     * عدد الأقسام المختارة لا يجب أن يتجاوز الحد المسموح في الباقة.
-     * (المناطق مسموح تجاوزها مع رسوم إضافية، يُحسب في ServiceProviderService)
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $plan = \App\Models\ServicePlan::find($this->input('service_plan_id'));
-            if (!$plan) {
-                return;
-            }
-
-            $categoriesCount = count($this->input('categories', []));
-            $allowedCategories = (int) ($plan->number_of_categories ?? 0);
-
-            if ($allowedCategories > 0 && $categoriesCount > $allowedCategories) {
-                $validator->errors()->add(
-                    'categories',
-                    'باقتك تسمح باختيار ' . $allowedCategories . ' نوع عقار فقط'
-                );
-            }
-        });
     }
 
     protected function failedValidation(Validator $validator)

@@ -19,9 +19,9 @@ use App\Http\Controllers\api\v1\ZonAndCityController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
-
+use App\Http\Controllers\Api\v1\SubscriptionSettingManagementController;
 use App\Http\Controllers\Api\v1\ServiceManagementController;
-use App\Http\Controllers\Api\v1\ServicePlanManagementController;
+
 use App\Http\Controllers\Api\v1\ProviderPermissionController;
 use App\Http\Controllers\Api\v1\ReportController;
 use App\Http\Controllers\Api\v1\UserPermissionController;
@@ -324,32 +324,34 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
     });
 
 
+
+
+    
     /*
     |--------------------------------------------------------------------------
-    | Service Plans (باقات مزودي الخدمة) — CRUD كامل عبر API
+    | Subscription Pricing Settings (إعدادات تسعير اشتراك مزوّد الخدمة) — عبر API
     |--------------------------------------------------------------------------
-    | ⚠️ تنبيه: تم تقييد كل مسارات هذا القسم بصلاحية "plans.manage-global"
-    | التي لا يملكها أي مزود خدمة افتراضيًا (انظر ProviderPermissionsSeeder).
-    | هذا يُغلق الثغرة السابقة (كل مزود كان يستطيع إنشاء/تعديل/حذف باقات
-    | جميع المزودين الآخرين) كأثر جانبي مباشر لبناء نظام الصلاحيات، وذلك
-    | لأن لا يوجد حاليًا حارس API مخصّص لحساب إداري حقيقي (Admin لا يملك
-    | Passport tokens في هذا المشروع). إعادة فتح هذا القسم لفئة إدارية حقيقية
-    | مستقبلاً (مهمة "إدارة الخدمات والباقات") تتطلب منح هذه الصلاحية صريحًا
-    | لذلك الحساب فقط، عبر:
+    | تحل محل قسم "service-plans" القديم (نظام الباقات الثلاث الثابتة، مُستبدَل
+    | بالكامل بمعادلة "أساسي + إضافات لكل منطقة/نوع + خصم حسب المدة").
+    | ⚠️ نفس تنبيه القسم القديم: لا يوجد حاليًا حارس API مخصّص لحساب إداري حقيقي
+    | (Admin لا يملك Passport tokens في هذا المشروع)، فهذه المسارات مقيَّدة
+    | بصلاحية "plans.manage-global" التي لا يملكها أي مزود خدمة افتراضيًا (انظر
+    | ProviderPermissionsSeeder). لمنحها صراحةً لحساب معيّن:
     |   $user->givePermissionTo(\App\Enums\ProviderPermission::PLANS_MANAGE_GLOBAL);
     */
     Route::group([
-        'prefix' => 'service-plans',
+        'prefix' => 'subscription-settings',
         'middleware' => ['auth:api', 'provider.api', 'provider.permission:plans.manage-global'],
     ], function () {
-        Route::get('/', [ServicePlanManagementController::class, 'index']);
-        Route::get('{id}', [ServicePlanManagementController::class, 'show']);
-        Route::post('/', [ServicePlanManagementController::class, 'store']);
-        Route::put('{id}', [ServicePlanManagementController::class, 'update']);
-        Route::delete('{id}', [ServicePlanManagementController::class, 'destroy']);
+        Route::get('/', [SubscriptionSettingManagementController::class, 'show']);
+        Route::put('/', [SubscriptionSettingManagementController::class, 'updatePricing']);
+        Route::put('discounts', [SubscriptionSettingManagementController::class, 'updateDiscounts']);
     });
 
 
+
+
+    
 
     /*
     |--------------------------------------------------------------------------

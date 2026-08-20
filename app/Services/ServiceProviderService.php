@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Models\Offer;
-use App\Models\ServicePlan;
 use App\Models\ServiceProviderSubscription;
 use App\Models\ServiceType;
 use App\Models\Category;
 use App\Models\Zone;
+use App\Models\SubscriptionDurationDiscount;
+use App\Models\SubscriptionPricingSetting;
 use App\Helpers\FileUploder;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -15,12 +16,9 @@ use Illuminate\Support\Facades\URL;
 
 class ServiceProviderService
 {
-    /** الرسوم الإضافية لكل منطقة تتجاوز حد الباقة — مطابق لواجهة الويب. */
-    const EXTRA_ZONE_COST = 50;
-
     /**
      * بيانات الإعداد لشاشة "إضافة خدمة داخل عقار"
-     * (أنواع الخدمات، الأقسام، المناطق، الباقات).
+     * (أنواع الخدمات، الأقسام، المناطق، إعدادات التسعير ونسب الخصم).
      */
     public function getSetupData(): array
     {
@@ -28,27 +26,46 @@ class ServiceProviderService
             'service_types' => ServiceType::select('id', 'name')->get(),
             'categories' => Category::select('id', 'name', 'name_ar')->get(),
             'zones' => Zone::select('id', 'name', 'name_ar')->where('status', 1)->get(),
-            'service_plans' => ServicePlan::all(),
+            'pricing_settings' => SubscriptionPricingSetting::current(),
+            'duration_discounts' => SubscriptionDurationDiscount::orderBy('duration_months')->get(),
         ];
     }
 
     /**
-     * حساب السعر النهائي مطابق تماماً لمنطق الواجهة:
-     * الإجمالي = (سعر الباقة × عدد الأشهر) + (عدد المناطق الزائدة عن حد الباقة × 50 ريال)
+     * حساب السعر النهائي حسب آلية الاشتراك الجديدة:
+     * السعر الشهري = الأساسي + (المناطق الزائدة عن الحد المشمول × سعر المنطقة الإضافية)
+     *                        + (الأنواع الزائدة عن الحد المشمول × سعر النوع الإضافي)
+     * الإجمالي قبل الخصم = السعر الشهري × المدة (بالأشهر)
+     * الإجمالي النهائي = الإجمالي قبل الخصم − (نسبة الخصم حسب المدة × الإجمالي قبل الخصم)
      */
-    public function calculatePrice(ServicePlan $plan, int $duration, int $zonesSelected): array
+    public function calculatePrice(int $duration, int $zonesCount, int $categoriesCount): array
     {
-        $allowedZones = (int) ($plan->number_of_zone ?? 0);
-        $extraZones = max(0, $zonesSelected - $allowedZones);
-        $extraCost = $extraZones * self::EXTRA_ZONE_COST;
+        $settings = SubscriptionPricingSetting::current();
 
-        $basePrice = (float) $plan->price * $duration;
-        $total = $basePrice + $extraCost;
+        $extraZones = max(0, $zonesCount - $settings->included_zones);
+        $extraCategories = max(0, $categoriesCount - $settings->included_categories);
+
+        $extraZonesCost = $extraZones * $settings->extra_zone_price;
+        $extraCategoriesCost = $extraCategories * $settings->extra_category_price;
+
+        $monthlyTotal = $settings->base_price + $extraZonesCost + $extraCategoriesCost;
+        $subtotal = $monthlyTotal * $duration;
+
+        $discountPercent = SubscriptionDurationDiscount::percentFor($duration);
+        $discountAmount = $subtotal * $discountPercent / 100;
+        $total = $subtotal - $discountAmount;
 
         return [
-            'base_price' => round($basePrice, 2),
+            'base_price' => round($settings->base_price, 2),
             'extra_zones' => $extraZones,
-            'extra_zones_cost' => round($extraCost, 2),
+            'extra_zones_cost' => round($extraZonesCost, 2),
+            'extra_categories' => $extraCategories,
+            'extra_categories_cost' => round($extraCategoriesCost, 2),
+            'monthly_total' => round($monthlyTotal, 2),
+            'duration' => $duration,
+            'subtotal_before_discount' => round($subtotal, 2),
+            'discount_percent' => $discountPercent,
+            'discount_amount' => round($discountAmount, 2),
             'total_price' => round($total, 2),
         ];
     }
@@ -94,9 +111,9 @@ class ServiceProviderService
     public function createOfferAndSubscription(array $data, $user, $imageFile): array
     {
         return DB::transaction(function () use ($data, $user, $imageFile) {
-            $plan = ServicePlan::findOrFail($data['service_plan_id']);
             $duration = (int) $data['subscription_duration'];
             $zonesCount = count($data['zones']);
+            $categoriesCount = count($data['categories']);
 
             // يُحفَظ مرة واحدة داخل service_providers ليُقرَأ لاحقاً من التطبيق
             // فلا يُطلَب من المزوّد إعادة إدخاله في كل عرض جديد. عادة تصل هذه
@@ -106,7 +123,7 @@ class ServiceProviderService
                 $this->updateProviderIdentity($data, $user);
             }
 
-            $pricing = $this->calculatePrice($plan, $duration, $zonesCount);
+            $pricing = $this->calculatePrice($duration, $zonesCount, $categoriesCount);
 
             $serviceType = ServiceType::firstOrCreate(['name' => $data['service_type']]);
 
@@ -138,25 +155,20 @@ class ServiceProviderService
                 'offer_owner' => 'me',
                 'image' => $image,
                 'phone_provider' => $user->phone ?? '',
-                'contact_phone' => $data['contact_phone'],
-                'contact_type' => $data['contact_type'],
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'address' => $data['address'] ?? null,
             ]);
 
-            $offer->serviceProviders()->attach($user->id, ['status' => 'accept']);
+            $offer->serviceProviders()->attach($user->id);
             $offer->categories()->attach($data['categories']);
             $offer->zones()->attach($data['zones']);
             $offer->updateOfferStatusToSended();
-
-            ServiceCatalogService::flushCache();
 
             $subscriptionNumber = 'SUB-' . strtoupper(uniqid());
 
             $subscription = ServiceProviderSubscription::create([
                 'user_id' => $user->id,
-                'service_plan_id' => $plan->id,
                 'duration' => $duration,
                 'expiry_date' => $expiryDate,
                 'subscription_status' => 'pending',
@@ -164,9 +176,16 @@ class ServiceProviderService
                 'price' => $pricing['total_price'],
                 'offer_id' => $offer->id,
                 'subscription_number' => $subscriptionNumber,
-                'number_of_ads' => $plan->number_of_ads ?? 0,
-                'number_of_categories' => count($data['categories']),
+                'number_of_ads' => 1,
+                'number_of_categories' => $categoriesCount,
                 'number_of_zone' => $zonesCount,
+                'base_price' => $pricing['base_price'],
+                'extra_zones_cost' => $pricing['extra_zones_cost'],
+                'extra_categories_count' => $pricing['extra_categories'],
+                'extra_categories_cost' => $pricing['extra_categories_cost'],
+                'monthly_total' => $pricing['monthly_total'],
+                'discount_percent' => $pricing['discount_percent'],
+                'discount_amount' => $pricing['discount_amount'],
             ]);
 
             // رابط دفع موقّع رقمياً وصالح لمدة ساعتين فقط — هذا الرابط
@@ -181,12 +200,17 @@ class ServiceProviderService
                 'offer_id' => $offer->id,
                 'subscription_id' => $subscription->id,
                 'subscription_number' => $subscriptionNumber,
-                'plan_name' => $plan->name,
                 'duration' => $duration,
                 'expiry_date' => $expiryDate,
                 'base_price' => $pricing['base_price'],
                 'extra_zones' => $pricing['extra_zones'],
                 'extra_zones_cost' => $pricing['extra_zones_cost'],
+                'extra_categories' => $pricing['extra_categories'],
+                'extra_categories_cost' => $pricing['extra_categories_cost'],
+                'monthly_total' => $pricing['monthly_total'],
+                'subtotal_before_discount' => $pricing['subtotal_before_discount'],
+                'discount_percent' => $pricing['discount_percent'],
+                'discount_amount' => $pricing['discount_amount'],
                 'amount_to_pay' => $pricing['total_price'],
                 'currency' => 'SAR',
                 'payment_url' => $paymentUrl,
