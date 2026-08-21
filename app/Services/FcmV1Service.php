@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FirebaseCredential;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,10 +14,13 @@ use Illuminate\Support\Facades\Log;
  * (https://fcm.googleapis.com/fcm/send) التي أوقفتها Google نهائيًا في
  * يونيو 2024 وترجع 404 دائمًا مهما كان المفتاح صحيحًا.
  *
- * يتطلب ملف مفتاح حساب خدمة Firebase (Service Account JSON) في
- * storage/app/firebase/service-account.json — غير موجود في Git، يوضع يدويًا
- * (Firebase Console → Project Settings → Service Accounts → Generate new
- * private key)، لمشروع FIREBASE_PROJECT_ID المحدد في .env.
+ * يتطلب مفتاح حساب خدمة Firebase (Service Account JSON، من Firebase Console
+ * → Project Settings → Service Accounts → Generate new private key) لمشروع
+ * FIREBASE_PROJECT_ID المحدد في .env. يُقرأ أولًا من جدول firebase_credentials
+ * (مشفّر، يُعبَّى عبر أمر `firebase:set-credentials` — الطريقة المفضّلة لأنها
+ * لا تحتاج نشر الملف عبر Git أو رفعه يدويًا لكل بيئة)، وإن لم يوجد صف يُرجع
+ * للملف storage/app/firebase/service-account.json كخيار احتياطي (مفيد للتطوير
+ * المحلي).
  */
 class FcmV1Service
 {
@@ -80,16 +84,9 @@ class FcmV1Service
     private static function getAccessToken(): ?string
     {
         return Cache::remember(self::CACHE_KEY, 3000, function () {
-            $credentialsPath = storage_path('app/firebase/service-account.json');
-
-            if (!file_exists($credentialsPath)) {
-                Log::info('FCM v1: ملف service-account.json غير موجود في ' . $credentialsPath);
-                return null;
-            }
-
-            $credentials = json_decode(file_get_contents($credentialsPath), true);
+            $credentials = self::loadCredentials();
             if (!$credentials || empty($credentials['client_email']) || empty($credentials['private_key'])) {
-                Log::info('FCM v1: service-account.json ناقص الحقول المطلوبة');
+                Log::info('FCM v1: لا توجد بيانات اعتماد صالحة (لا صف في firebase_credentials ولا ملف service-account.json)');
                 return null;
             }
 
@@ -117,5 +114,20 @@ class FcmV1Service
 
             return $response->json('access_token');
         });
+    }
+
+    private static function loadCredentials(): ?array
+    {
+        $fromDb = FirebaseCredential::current();
+        if ($fromDb) {
+            return $fromDb;
+        }
+
+        $credentialsPath = storage_path('app/firebase/service-account.json');
+        if (!file_exists($credentialsPath)) {
+            return null;
+        }
+
+        return json_decode(file_get_contents($credentialsPath), true) ?: null;
     }
 }
