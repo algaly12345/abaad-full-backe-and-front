@@ -37,6 +37,7 @@ Route::group(['prefix' => 'admin'], function () {
         });
 
         // ── تغيير حالة عرض خدمة ─────────────────────────────────
+        Route::get('offers/statuses', [AdminOfferController::class, 'statuses']);
         Route::put('offers/{offer}/status', [AdminOfferController::class, 'updateStatus']);
 
     });
