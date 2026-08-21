@@ -323,3 +323,4 @@ class OfferController extends Controller
 
         return view('service-provider.offers.pending-owner-offers', compact('offers'));
     }
+}
