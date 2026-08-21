@@ -35,9 +35,7 @@ class OfferObserver
     }
 
     /**
-     * إشعار مزوّدي الخدمة عند تفعيل/إلغاء تفعيل عرضهم فقط (accept/cancelled).
-     * لا نُشعر عند pending لأنها دائمًا ناتجة عن فعل المزوّد نفسه في نفس الجلسة
-     * (ServiceCatalogController::toggleStatus) فلا داعي لإشعاره بشيء يعرفه أصلاً.
+     * إشعار مزوّدي الخدمة عند تغيّر حالة عرضهم إلى أي من الحالات المعروفة.
      */
     private function notifyStatusChange(Offer $offer): void
     {
@@ -45,14 +43,33 @@ class OfferObserver
             return;
         }
 
-        if ($offer->status === 'accept') {
-            $title = 'تم تفعيل عرضك';
-            $description = 'أصبح عرضك مفعّلاً وظاهرًا للعملاء.';
-        } elseif ($offer->status === 'cancelled') {
-            $title = 'تم إلغاء تفعيل عرضك';
-            $description = 'تم إلغاء تفعيل عرضك من قِبل الإدارة.';
-        } else {
-            return;
+        switch ($offer->status) {
+            case 'accept':
+                $title = 'تم تفعيل عرضك';
+                $description = 'أصبح عرضك مفعّلاً وظاهرًا للعملاء.';
+                break;
+            case 'pending':
+                $title = 'عرضك قيد المراجعة';
+                $description = 'تم وضع عرضك قيد المراجعة، سيتم إشعارك عند اعتماده.';
+                break;
+            case 'cancelled':
+                $title = 'تم إلغاء تفعيل عرضك';
+                $description = 'تم إلغاء تفعيل عرضك من قِبل الإدارة.';
+                break;
+            case 'rejected':
+                $title = 'تم رفض عرضك';
+                $description = 'تم رفض عرضك من قِبل الإدارة.';
+                break;
+            case 'unpaid':
+                $title = 'عرضك بحاجة إلى دفع';
+                $description = 'يرجى إتمام عملية الدفع لتفعيل عرضك.';
+                break;
+            case 'expired':
+                $title = 'انتهت صلاحية عرضك';
+                $description = 'لقد انتهت صلاحية عرضك ولم يعد ظاهرًا للعملاء.';
+                break;
+            default:
+                return;
         }
 
         foreach ($offer->serviceProviders as $provider) {

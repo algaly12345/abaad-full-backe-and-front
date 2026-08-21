@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\api\v1\admin\AdminAuthController;
 use App\Http\Controllers\api\v1\admin\AdminDashboardController;
+use App\Http\Controllers\api\v1\admin\AdminOfferController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +35,9 @@ Route::group(['prefix' => 'admin'], function () {
             Route::get('recent-activities', [AdminDashboardController::class, 'recentActivities']);
             Route::get('chart-data', [AdminDashboardController::class, 'chartData']);
         });
+
+        // ── تغيير حالة عرض خدمة ─────────────────────────────────
+        Route::put('offers/{offer}/status', [AdminOfferController::class, 'updateStatus']);
 
     });
 
