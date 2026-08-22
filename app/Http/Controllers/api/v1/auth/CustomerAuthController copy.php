@@ -52,7 +52,7 @@ class CustomerAuthController extends Controller
             ], 403);
         }
 
-        if (!$user->is_phone_verified) {
+       
             $otp = rand(1000, 9999);
 
             DB::table('phone_or_email_verifications')->updateOrInsert(
@@ -66,7 +66,7 @@ class CustomerAuthController extends Controller
 
             $msg = 'مرحبا، كود تفعيل رقمك الخاص هو: ' . $otp;
             $this->sendSMS($user->phone, $msg);
-        }
+  
 
         if (empty($user->ref_code)) {
             $user->ref_code = Helpers::generate_referer_code($user);
