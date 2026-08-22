@@ -26,3 +26,14 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: awad1234/abaad-app:latest,awad1234/abaad-app:${{ github.sha }}
+
+      - name: Set Kubernetes context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Restart deployment to pull new image
+        run: |
+          kubectl rollout restart deployment/laravel-app -n abaad
+          kubectl rollout status deployment/laravel-app -n abaad --timeout=180s
