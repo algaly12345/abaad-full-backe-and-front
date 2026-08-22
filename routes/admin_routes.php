@@ -23,6 +23,10 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('refresh-token', [AdminAuthController::class, 'refresh']);
     });
 
+    // ── قائمة الحالات ثابتة وغير حساسة — متاحة بدون توكن حتى تُبنى
+    // القائمة المنسدلة بالفرونت قبل تسجيل الدخول أيضاً ──────────
+    Route::get('offers/statuses', [AdminOfferController::class, 'statuses']);
+
     // ── كل ما بعد هذا يتطلب تسجيل دخول صحيح كأدمن ──────────────
     Route::group(['middleware' => 'auth:admin-api'], function () {
 
@@ -37,7 +41,6 @@ Route::group(['prefix' => 'admin'], function () {
         });
 
         // ── تغيير حالة عرض خدمة ─────────────────────────────────
-        Route::get('offers/statuses', [AdminOfferController::class, 'statuses']);
         Route::put('offers/{offer}/status', [AdminOfferController::class, 'updateStatus']);
 
     });
