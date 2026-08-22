@@ -22,7 +22,8 @@ spec:
     spec:
       containers:
       - name: laravel
-        image: awad1234/abaad-app:latest
+        # غيّر هذا لاسم الـ image بتاعك
+        image: YOURDOCKERHUB_USERNAME/abaad-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
