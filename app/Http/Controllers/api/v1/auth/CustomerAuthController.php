@@ -52,21 +52,20 @@ class CustomerAuthController extends Controller
             ], 403);
         }
 
-        if (!$user->is_phone_verified) {
-            $otp = rand(1000, 9999);
+        // يُرسَل كود التحقق في كل تسجيل دخول (لا فقط عند أول تفعيل للهاتف).
+        $otp = rand(1000, 9999);
 
-            DB::table('phone_or_email_verifications')->updateOrInsert(
-                ['phone_or_email' => $user->phone],
-                [
-                    'token' => $otp,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]
-            );
+        DB::table('phone_or_email_verifications')->updateOrInsert(
+            ['phone_or_email' => $user->phone],
+            [
+                'token' => $otp,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
-            $msg = 'مرحبا، كود تفعيل رقمك الخاص هو: ' . $otp;
-            $this->sendSMS($user->phone, $msg);
-        }
+        $msg = 'مرحبا، كود تفعيل رقمك الخاص هو: ' . $otp;
+        $this->sendSMS($user->phone, $msg);
 
         if (empty($user->ref_code)) {
             $user->ref_code = Helpers::generate_referer_code($user);
@@ -205,10 +204,6 @@ class CustomerAuthController extends Controller
         ]);
         $user->ref_code = Helpers::generate_referer_code($user);
 
-        // نظام الإحالة: الحقل ref_code القادم من التطبيق (SignUpBody.refCode)
-        // يحمل كود إحالة مزوّد خدمة آخر (وليس كود المستخدم نفسه، والذي مصادفةً
-        // يشترك بنفس الاسم مع عمود users.ref_code القديم أعلاه). نبحث عنه في
-        // users.referral_code الجديد المخصص لنظام الإحالة.
         $referralCode = trim((string) $request->ref_code);
         if ($referralCode !== '') {
             $referrer = User::where('referral_code', $referralCode)->first();
@@ -257,114 +252,6 @@ class CustomerAuthController extends Controller
         return response()->json(['token' => $token,'is_phone_verified' => 0, 'phone_verify_end_url'=>"api/v1/auth/verify-phone" ], 200);
     }
 
-    /**
-     * يطبّع رقم جوال سعودي محلي (05XXXXXXXX أو 5XXXXXXXX) لصيغة +966XXXXXXXXX
-     * الموحدة — نفس منطق التطبيع المستخدم في login()/verify_phone() أعلاه.
-     */
-    private function normalizeSaudiPhone(string $phone): string
-    {
-        if (preg_match('/^0?5\d{8}$/', $phone)) {
-            return '+966' . ltrim($phone, '0');
-        }
-        if (preg_match('/^5\d{8}$/', $phone)) {
-            return '+966' . $phone;
-        }
-        return $phone;
-    }
-
-    /**
-     * POST /api/v1/customer/phone/send-otp — مصادَق. يرسل رمز تحقق لرقم جوال
-     * جديد يريد المستخدم المصادَق ربطه بحسابه (مثلاً مزوّد خدمة دخل عبر
-     * جوجل/فيسبوك وبقي users.phone فارغاً — راجع CompleteProviderProfileScreen
-     * بالتطبيق). لا يُحفَظ الرقم إلا بعد نجاح verifyPhoneOtp أدناه.
-     */
-    public function sendPhoneOtp(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
-        }
-
-        $phone = $this->normalizeSaudiPhone($request->phone);
-        $user = auth()->user();
-
-        $taken = User::where('phone', $phone)->where('id', '!=', $user->id)->exists();
-        if ($taken) {
-            return response()->json([
-                'errors' => [['code' => 'phone', 'message' => 'رقم الجوال مستخدم من قبل مستخدم آخر']]
-            ], 422);
-        }
-
-        $otp = rand(1000, 9999);
-        DB::table('phone_or_email_verifications')->updateOrInsert(
-            ['phone_or_email' => $phone],
-            ['token' => $otp, 'created_at' => now(), 'updated_at' => now()]
-        );
-
-        $this->sendSMS($phone, 'مرحباً، رمز تحقق رقم جوالك هو: ' . $otp);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'تم إرسال رمز التحقق',
-        ], 200);
-    }
-
-    /**
-     * POST /api/v1/customer/phone/verify-otp — مصادَق. يتحقق من الرمز ويحفظ
-     * الرقم مباشرة على حساب المستخدم المصادَق الحالي عند نجاح التحقق.
-     */
-    public function verifyPhoneOtp(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required',
-            'otp' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
-        }
-
-        $phone = $this->normalizeSaudiPhone($request->phone);
-        $user = auth()->user();
-
-        $data = DB::table('phone_or_email_verifications')->where([
-            'phone_or_email' => $phone,
-            'token' => $request['otp'],
-        ])->first();
-
-        if (!$data) {
-            return response()->json([
-                'errors' => [['code' => 'otp', 'message' => 'رمز التحقق غير صحيح أو منتهي الصلاحية']]
-            ], 403);
-        }
-
-        DB::table('phone_or_email_verifications')->where([
-            'phone_or_email' => $phone,
-            'token' => $request['otp'],
-        ])->delete();
-
-        // فحص تعارض إضافي احتياطياً (رقم استُخدم من مستخدم آخر بين إرسال الرمز والتحقق منه).
-        $taken = User::where('phone', $phone)->where('id', '!=', $user->id)->exists();
-        if ($taken) {
-            return response()->json([
-                'errors' => [['code' => 'phone', 'message' => 'رقم الجوال مستخدم من قبل مستخدم آخر']]
-            ], 422);
-        }
-
-        $user->phone = $phone;
-        $user->is_phone_verified = 1;
-        $user->save();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'تم التحقق من رقم الجوال بنجاح',
-            'data' => ['phone' => $user->phone],
-        ], 200);
-    }
-
     // 4. جلب الأكواد للاختبارات البرمجية
     public function all_code()
     {
@@ -385,7 +272,7 @@ class CustomerAuthController extends Controller
             "userName"   => "Abaad",
             "numbers"    => str_replace('+', '', $phone),
             "userSender" => "ABAAD",
-            "apiKey"     => "d98696cc4de689215daa663a3b5efe62",
+            "apiKey"     => env('MSEGAT_API_KEY', 'd98696cc4de689215daa663a3b5efe62'),
             "msg"        => $msg
         ];
 
