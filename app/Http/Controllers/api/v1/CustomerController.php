@@ -90,7 +90,12 @@ class CustomerController extends Controller
                 'image' => $imageName
             ]);
 
-
+        // اسم/صورة/روابط التواصل الاجتماعي هذه هي نفسها التي يعرضها
+        // ServiceOfferResource ضمن 'providers' لكل عرض خدمة تابع لهذا الحساب
+        // (إن كان مزوّد خدمة) — بلا هذا الإبطال تبقى عروضه تُظهر بيانات
+        // التواصل القديمة حتى تنتهي صلاحية الكاش (services_catalog:show:*،
+        // 180 ثانية).
+        \App\Services\ServiceCatalogService::flushCache();
 
         return response()->json(['message' =>'successfully_updated'], 200);
     }

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -iE '\\\\.dart$|pubspec\\\\.yaml|/lib/main\\\\.dart')",
+      "Bash(git submodule *)",
+      "Bash(git status *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh repo *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(git commit *)",
+      "Bash(php -l routes/api.php)",
+      "Bash(php -l config/app.php)",
+      "Bash(php -l Dockerfile)",
+      "Bash(git checkout *)"
+    ]
+  }
+}

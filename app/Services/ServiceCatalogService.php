@@ -201,7 +201,7 @@ class ServiceCatalogService
                     $q->select(
                         'users.id', 'users.name', 'users.phone', 'users.snapchat',
                         'users.instagram', 'users.website', 'users.tiktok',
-                        'users.twitter', 'users.image'
+                        'users.twitter', 'users.youtube', 'users.image'
                     )->wherePivot('status', 'accept');
                 },
             ]);
