@@ -53,11 +53,16 @@ class ReferralController extends Controller
 
         $data = $referrals->map(function (Referral $referral) {
             $commission = $referral->commission;
+            // oldest('id') وليس latest: العمولة تُحسَب دائماً من أول اشتراك
+            // مدفوع فقط (راجع ReferralCommissionService)، وأي معرّف لاحق ينتمي
+            // بالضرورة لتجديد لاحق أُنشئ بعده. لو استخدمنا latest هنا، ستُعرض
+            // باقة/مبلغ التجديد الأخير بجانب مبلغ عمولة محسوب من الاشتراك الأول
+            // فيتناقض العمودان لنفس السطر.
             $subscription = $commission
                 ? \App\Models\ServiceProviderSubscription::where('user_id', $referral->referred_id)
                     ->where('payment_status', 'paid')
                     ->with('servicePlan:id,name')
-                    ->latest('id')
+                    ->oldest('id')
                     ->first()
                 : null;
 

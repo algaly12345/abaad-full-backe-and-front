@@ -13,9 +13,10 @@ class ApproveReferralCommissions extends Command
 
     public function handle(ReferralCommissionService $service): int
     {
+        $expired = $service->expireStalePendingReferrals();
         $result = $service->processPendingCommissions();
 
-        $this->info("Approved: {$result['approved']}, Cancelled: {$result['cancelled']}");
+        $this->info("Expired: {$expired}, Approved: {$result['approved']}, Cancelled: {$result['cancelled']}");
 
         return self::SUCCESS;
     }

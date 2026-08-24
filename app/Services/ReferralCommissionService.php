@@ -35,6 +35,14 @@ class ReferralCommissionService
                 return;
             }
 
+            $settings = ReferralSetting::current();
+
+            if ($this->isReferralExpired($referral, $settings)) {
+                $referral->status = 'EXPIRED';
+                $referral->save();
+                return;
+            }
+
             // "أول اشتراك فقط": هل يوجد اشتراك آخر مدفوع لنفس المستخدم قبل هذا؟
             $hasEarlierPaidSubscription = ServiceProviderSubscription::where('user_id', $subscription->user_id)
                 ->where('payment_status', 'paid')
@@ -51,7 +59,6 @@ class ReferralCommissionService
             // (ServiceProviderService::calculatePrice) — subscription->price هو
             // المبلغ الفعلي المدفوع فعليًا لبوابة Moyasar بدون أي تعديل إضافي.
             $paidAmount = (float) $subscription->price;
-            $settings = ReferralSetting::current();
             $commissionAmount = $settings->calculateCommission($paidAmount);
 
             Commission::create([
@@ -133,6 +140,43 @@ class ReferralCommissionService
         }
 
         return ['approved' => $approved, 'cancelled' => $cancelled];
+    }
+
+    /**
+     * يُستدعى يوميًا من أمر referrals:process-commissions: يُنهي حالة أي
+     * إحالة PENDING_PAYMENT تجاوزت نافذة الإسناد (attribution_window_days)
+     * دون أن يدفع المُحال أي اشتراك، حتى تظهر بحالة EXPIRED بدل البقاء
+     * معلّقة للأبد. attribution_window_days <= 0 أو فارغة = بلا انتهاء.
+     */
+    public function expireStalePendingReferrals(): int
+    {
+        $settings = ReferralSetting::current();
+        $windowDays = $settings->attribution_window_days;
+
+        if (!$windowDays || $windowDays <= 0) {
+            return 0;
+        }
+
+        return Referral::where('status', 'PENDING_PAYMENT')
+            ->where('created_at', '<', now()->subDays($windowDays))
+            ->update(['status' => 'EXPIRED']);
+    }
+
+    /**
+     * نفس فحص انتهاء النافذة أعلاه لكن لإحالة واحدة محدّدة، يُستخدم لحظة
+     * الدفع نفسها (createCommissionForPaidSubscription) بدل انتظار الأمر
+     * اليومي — يمنع احتساب عمولة لإحالة تجاوزت النافذة خلال الساعات القليلة
+     * قبل تشغيل referrals:process-commissions التالي.
+     */
+    private function isReferralExpired(Referral $referral, ReferralSetting $settings): bool
+    {
+        $windowDays = $settings->attribution_window_days;
+
+        if (!$windowDays || $windowDays <= 0) {
+            return false;
+        }
+
+        return $referral->created_at->lt(now()->subDays($windowDays));
     }
 
     private function creditWallet(Commission $commission): void

@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "sa.pdm.abaad.abaad",
       "sha256_cert_fingerprints": [
-        "44:C7:14:35:B5:7C:4D:B9:54:FB:57:43:1F:8F:8B:0A:B4:4A:20:4C:09:EC:8F:1D:51:AE:39:2E:74:40:FB:C4"
+        "44:C7:14:35:B5:7C:4D:B9:54:FB:57:43:1F:8F:8B:0A:B4:4A:20:4C:09:EC:8F:1D:51:AE:39:2E:74:40:FB:C4",
+        "F6:84:39:DD:BA:74:A7:63:73:FC:4C:60:B5:0D:9C:B0:C1:DD:43:D9:B0:0D:FA:25:31:F2:90:DD:1D:37:97:F1"
       ]
     }
   }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -63,7 +64,14 @@ class ReferralLinkController extends Controller
     public function assetLinks()
     {
         $packageName = config('services.android_app.package_name');
-        $fingerprints = array_filter(explode(',', (string) config('services.android_app.sha256_fingerprints')));
+
+        // نفس نمط MoyasarPaymentController::secretKey(): business_settings أولاً
+        // (قابل للتعديل من قاعدة البيانات مباشرة بدون وصول SSH/.env على سيرفر
+        // الإنتاج)، ثم .env احتياطياً. القيمة: بصمات SHA256 مفصولة بفاصلة —
+        // يمكن إضافة أكثر من بصمة (مثلاً debug + release) بنفس الحقل.
+        $configured = Helpers::get_business_settings('android_sha256_fingerprints');
+        $raw = filled($configured) ? $configured : config('services.android_app.sha256_fingerprints');
+        $fingerprints = array_filter(array_map('trim', explode(',', (string) $raw)));
 
         return response()->json([
             [
