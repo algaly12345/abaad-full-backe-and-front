@@ -116,11 +116,14 @@ class ServiceProvidertController extends Controller
      */
     public function updateIdentity(Request $request)
     {
+        // أرقام الهوية/السجل التجاري بيانات ضرورية يُطلب من المزوّد استكمالها،
+        // لكنها لا تُحجَب بها المتابعة لمعالج "إضافة خدمة" — تُحفَظ ناقصة عند
+        // وجودها وتخضع لمراجعة/استكمال يدوي لاحقًا (لوحة الأدمن).
         $data = $request->validate([
             'identity_type' => 'required|in:individual,company',
-            'identity_number' => 'nullable|required_if:identity_type,individual|string',
-            'freelance_membership_number' => 'nullable|required_if:identity_type,individual|string',
-            'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
+            'identity_number' => 'nullable|string',
+            'freelance_membership_number' => 'nullable|string',
+            'commercial_registration_no' => 'nullable|string',
         ]);
 
         $user = auth()->user();
@@ -177,8 +180,10 @@ class ServiceProvidertController extends Controller
      */
     public function updateBusinessInfo(Request $request)
     {
+        // العنوان بيانات ضرورية كبقية بيانات "استكمال الملف"، لكنها لا تُحجب
+        // متابعة معالج "إضافة خدمة" بسبب نقصها — تُراجَع/تُستكمل يدويًا لاحقًا.
         $data = $request->validate([
-            'address' => 'required|string',
+            'address' => 'nullable|string',
             'zone_id' => 'nullable|exists:zones,id',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
@@ -204,8 +209,20 @@ class ServiceProvidertController extends Controller
      */
     public function storeOfferAPI(StoreOfferRequest $request)
     {
+        $user = auth()->user();
+
+        // مزوّد لديه طلب قيد المراجعة فعلاً (دفع سابقًا وينتظر قرار الأدمن) لا
+        // يجوز أن يرسل طلبًا جديدًا حتى يُحسَم الأول (اعتماد/رفض) — راجع
+        // App\Enums\ProviderApprovalStatus. لا يمنع هذا مزوّداً معتمَداً سلفاً
+        // من إضافة عروض إضافية بلا حدّ.
+        if ($user->provider?->approval_status === \App\Enums\ProviderApprovalStatus::PENDING) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'لديك طلب مزوّد خدمة قيد المراجعة حاليًا — يجب انتظار قرار الإدارة قبل إضافة خدمة جديدة',
+            ], 422);
+        }
+
         try {
-            $user = auth()->user();
             $result = $this->serviceProviderService->createOfferAndSubscription(
                 $request->validated(),
                 $user,

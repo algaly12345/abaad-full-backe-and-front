@@ -162,7 +162,14 @@ class ServiceProviderService
                 'address' => $data['address'] ?? null,
             ]);
 
-            $offer->serviceProviders()->attach($user->id);
+            // status='accept' على الـ pivot هنا ضروري وليس تفصيلاً: هذا عمود
+            // منفصل تمامًا عن Offer.status نفسه (الذي يتحكم بظهور العرض عمومًا
+            // أو بقائه pending للمراجعة) — ServiceCatalogService يُحمّل علاقة
+            // serviceProviders دائمًا بشرط wherePivot('status','accept') ليبني
+            // مصفوفة 'providers' في ServiceOfferResource (اسم/هاتف/صورة/روابط
+            // التواصل الاجتماعي). بدونها هنا تبقى تلك المصفوفة فارغة دائمًا —
+            // لا تظهر بيانات المزوّد إطلاقًا بصرف النظر عن اعتماد الأدمن.
+            $offer->serviceProviders()->attach($user->id, ['status' => 'accept']);
             $offer->categories()->attach($data['categories']);
             $offer->zones()->attach($data['zones']);
             $offer->updateOfferStatusToSended();

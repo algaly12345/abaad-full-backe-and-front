@@ -89,6 +89,11 @@
       border: 1px solid rgba(184, 134, 11, 0.35);
     }
 
+    header.brand .meta span.admin-api-badge {
+      background: rgba(155, 89, 182, 0.18);
+      border: 1px solid rgba(155, 89, 182, 0.35);
+    }
+
     header.brand .meta b {
       font-size: 16px;
       color: var(--brand-accent);
@@ -96,6 +101,10 @@
 
     header.brand .meta span.session-badge b {
       color: #ffd866;
+    }
+
+    header.brand .meta span.admin-api-badge b {
+      color: #d9b3ff;
     }
 
     /* --- تخصيص Swagger UI --- */
@@ -182,10 +191,11 @@
       <p>وثيقة OpenAPI 3.0 تفاعلية — مستخرجة بدقّة من الكود الفعلي</p>
     </div>
     <div class="meta">
-      <span><b>103</b> عملية</span>
-      <span><b>22</b> تصنيف</span>
-      <span><b>38</b> محمية بـ Bearer</span>
+      <span><b>141</b> عملية</span>
+      <span><b>31</b> تصنيف</span>
+      <span><b>61</b> محمية بـ Bearer</span>
       <span class="session-badge"><b>11</b> محمية بجلسة الإدارة (Session)</span>
+      <span class="admin-api-badge"><b>10</b> محمية بتوكن الإدارة (Admin API)</span>
     </div>
   </header>
 
@@ -208,7 +218,7 @@
         "description": "بيئة الإنتاج (Production)"
       },
       {
-        "url": "http://192.168.1.131/api/v1",
+        "url": "http://10.50.214.151/api/v1",
         "description": "بيئة التطوير المحلية (XAMPP / Local)"
       }
     ],
@@ -312,6 +322,30 @@
       {
         "name": "Reports - Global (Admin)",
         "description": "إحصائيات شاملة على مستوى المنصة للعقارات والمستخدمين والرسوم البيانية - النقطة 5"
+      },
+      {
+        "name": "Referral Rewards (Provider)",
+        "description": "🆕 نظام مكافآت الإحالة الخاص بمزوّدي الخدمة — كل مزوّد خدمة حالي يعمل تلقائيًا كمسوّق: يولّد رابط إحالة، يكسب عمولة عند اشتراك مُحالين جدد، ويسحب رصيده المتاح. محمية بـ auth:api + provider.api."
+      },
+      {
+        "name": "Subscription Pricing Settings (Admin)",
+        "description": "🆕 ⚠️ [مقيَّدة حاليًا] إدارة معادلة تسعير اشتراك مزوّد الخدمة (سعر أساسي + سعر لكل منطقة/تصنيف إضافي) ونسب الخصم حسب مدة الاشتراك. محمية بصلاحية plans.manage-global التي لا يملكها أي حساب افتراضيًا — نفس تحذير تبويب Service Plans (Admin). البديل الفعلي العامل حاليًا هو لوحة الويب Dashboard\\SubscriptionPricingSettingController."
+      },
+      {
+        "name": "Admin API - Authentication",
+        "description": "🆕 REST API إدارية حقيقية (routes/admin_routes.php، مُركَّبة على api/admin بميدلوير api فقط — بلا بادئة v1). مصادقة عبر Laravel Passport بحارس (Guard) مستقل admin-api يُصدر توكن لنموذج App\\Models\\Admin — منفصل تمامًا عن bearerAuth (عملاء/مزوّدو خدمة) وعن sessionAuth (لوحة الويب Admin Panel). هذا هو الحارس الإداري الحقيقي المُشار إليه كـ\"غير موجود بعد\" في تحذيرات تبويبي Service Plans (Admin) و Subscription Pricing Settings (Admin)."
+      },
+      {
+        "name": "Admin API - Dashboard",
+        "description": "🆕 إحصائيات ورسوم بيانية عامة للوحة تحكم إدارية خارجية، عبر Passport admin-api."
+      },
+      {
+        "name": "Admin API - Offers",
+        "description": "🆕 استعلام حالات العروض وتغيير حالة عرض خدمة (Offer) عبر Passport admin-api — بديل REST جزئي (تغيير الحالة فقط) لتبويب Admin Panel - Broadcast Offers الجلسي (Session)."
+      },
+      {
+        "name": "Admin API - Provider Approvals",
+        "description": "🆕 مراجعة/اعتماد/رفض طلبات \"الترقية إلى مزوّد خدمة\" (service_providers.approval_status) بعد نجاح أول دفعة اشتراك — عبر Passport admin-api. approve() هي النقطة الوحيدة التي تُفعِّل user_type=provider في المسار الجديد بالكامل (Flutter+API)."
       }
     ],
     "paths": {
@@ -7215,6 +7249,2102 @@
             }
           }
         }
+      },
+
+      "/auth/vendor/business_plan": {
+        "post": {
+          "tags": [
+            "Authentication"
+          ],
+          "summary": "🆕🔒 اختيار باقة نشر للعقار (نسخة مطابقة لـ /estate/market-plan، محمية بتوكن)",
+          "description": "نفس منطق ومعالجة POST /estate/market-plan تمامًا (نفس الكونترولر والدالة market_plan)، لكن تحت هذا المسار البديل الذي يستدعيه تطبيق الجوال، ومحمية إضافيًا بـ auth:api لأن الفرونت لا يرسل user_id في الجسم ويعتمد على المستخدم المسجّل دخوله حاليًا بدلاً منه.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "estate_id": {
+                      "type": "integer"
+                    },
+                    "package_id": {
+                      "type": "integer",
+                      "description": "مطلوب فقط إذا business_plan=subscription"
+                    },
+                    "business_plan": {
+                      "type": "string",
+                      "enum": [
+                        "subscription",
+                        "commission"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "restaurant_model": {
+                        "type": "string",
+                        "enum": [
+                          "subscription",
+                          "commission"
+                        ],
+                        "description": "⚠️ اسم الحقل موروث من نظام مطاعم سابق ولم يُعدَّل"
+                      },
+                      "logo": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/provider/permissions": {
+        "get": {
+          "tags": [
+            "Provider Permissions"
+          ],
+          "summary": "🆕🔒 أدوار وصلاحيات مزوّد الخدمة الحالي (اسم مسار مطابق لتطبيق الجوال)",
+          "description": "مطابقة تامة لـ GET /service-provider/permissions (نفس الكونترولر والدالة) — أُضيف هذا المسار البديل لأن تطبيق الجوال يستدعي provider/permissions بدلاً من service-provider/permissions.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "roles": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "example": [
+                              "provider"
+                            ]
+                          },
+                          "permissions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "example": [
+                              "services.view",
+                              "services.create"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/provider-subscriptions/update-identity": {
+        "post": {
+          "tags": [
+            "Provider Subscriptions"
+          ],
+          "summary": "🆕🔒 حفظ بيانات هوية مزوّد الخدمة (فرد/منشأة)",
+          "description": "حفظ فوري يُستدعى من ProviderUpgradeScreen بالتطبيق مباشرة عند الضغط على \"متابعة\"، بدل انتظار إتمام معالج \"إضافة خدمة\" بالكامل — فلا تُفقَد البيانات لو غادر المستخدم المعالج قبل إكماله. يُنشئ سجل مزوّد الخدمة (service_providers) تلقائيًا لأول مرة إن لم يكن موجودًا. أرقام الهوية/السجل التجاري بيانات مطلوب استكمالها لاحقًا لكنها لا تُحجَب بها هذه الخطوة — تخضع لمراجعة/استكمال يدوي من لوحة الأدمن.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "identity_type"
+                  ],
+                  "properties": {
+                    "identity_type": {
+                      "type": "string",
+                      "enum": [
+                        "individual",
+                        "company"
+                      ]
+                    },
+                    "identity_number": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "freelance_membership_number": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "commercial_registration_no": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم حفظ بيانات الهوية بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "identity_type": {
+                            "type": "string"
+                          },
+                          "identity_number": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "freelance_membership_number": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "commercial_registration_no": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "422": {
+              "description": "identity_type مفقود أو ليس ضمن individual/company"
+            }
+          }
+        }
+      },
+
+      "/provider-subscriptions/update-logo": {
+        "post": {
+          "tags": [
+            "Provider Subscriptions"
+          ],
+          "summary": "🆕🔒 رفع/تحديث شعار مزوّد الخدمة",
+          "description": "الشعار يظهر بجانب اسم المزوّد في بطاقات قائمة العروض (ServiceOfferResource::providers.image). لا علاقة له بصورة العرض نفسها (store-offer) ولا بصورة حساب المستخدم العامة (customer/update-profile). يُنشئ سجل مزوّد الخدمة تلقائيًا لأول مرة إن لم يكن موجودًا.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "image"
+                  ],
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم تحديث الشعار بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "422": {
+              "description": "image مفقودة أو ليست ملف صورة صالح"
+            }
+          }
+        }
+      },
+
+      "/provider-subscriptions/update-business-info": {
+        "post": {
+          "tags": [
+            "Provider Subscriptions"
+          ],
+          "summary": "🆕🔒 حفظ عنوان نشاط مزوّد الخدمة",
+          "description": "يُستدعى من CompleteProviderProfileScreen بالتطبيق عند إضافة مزوّد الخدمة أول عرض له وبياناته ناقصة. zone_id/latitude/longitude اختيارية عمدًا (استُبعدت من هذه الشاشة بناءً على طلب صريح) وتُدخَل حاليًا فقط من لوحة الأدمن.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "zone_id": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "latitude": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "longitude": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم حفظ بيانات النشاط بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "zone_id": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "latitude": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "422": {
+              "description": "zone_id غير موجود في جدول zones، أو latitude/longitude ليست أرقامًا"
+            }
+          }
+        }
+      },
+
+      "/provider-subscriptions/{subscription_number}/resume-payment": {
+        "get": {
+          "tags": [
+            "Provider Subscriptions"
+          ],
+          "summary": "🆕🔒 توليد رابط دفع جديد لاشتراك لم يُدفع بعد",
+          "description": "يُستخدم من زر \"ادفع الآن\" في شاشة تفاصيل الخدمة بعد انتهاء صلاحية رابط الدفع الأصلي (ساعتان من إنشاء العرض). يرفض التوليد إن كان الاشتراك مدفوعًا بالفعل. الرابط الجديد موقَّع رقميًا (Signed URL) وصالح لساعتين.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/SubscriptionNumberPath"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "subscription_number": {
+                            "type": "string"
+                          },
+                          "payment_url": {
+                            "type": "string",
+                            "description": "رابط دفع موقَّع رقميًا صالح لمدة ساعتين، يُفتح داخل WebView"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "الاشتراك غير موجود، أو لا يخصّ المستخدم الحالي",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "تم دفع هذا الاشتراك مسبقًا",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/referrals/my-link": {
+        "get": {
+          "tags": [
+            "Referral Rewards (Provider)"
+          ],
+          "summary": "🆕🔒 كود ورابط الإحالة الخاص بالمزوّد الحالي",
+          "description": "يُولَّد referral_code تلقائيًا عند أول استدعاء إن لم يكن موجودًا (10 خانات بالضبط: بادئة SP + 8 أحرف عشوائية). رابط الإحالة يشير إلى نطاق abaadapp.sa/ref/{code} الذي يستمعه تطبيق الجوال عبر Deep Link (راجع MyApp._handleReferralLink).",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "referral_code": {
+                        "type": "string",
+                        "example": "SPAB12CD34"
+                      },
+                      "referral_link": {
+                        "type": "string",
+                        "example": "https://abaadapp.sa/ref/SPAB12CD34"
+                      },
+                      "share_text": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "description": "المستخدم الحالي ليس مزوّد خدمة (user_type != provider)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/referrals": {
+        "get": {
+          "tags": [
+            "Referral Rewards (Provider)"
+          ],
+          "summary": "🆕🔒 قائمة المُحالين من طرف المزوّد الحالي",
+          "description": "كل مستخدم سجّل عبر رابط إحالة المزوّد الحالي، مع باقته المشترَك بها، قيمة العملية، قيمة العمولة، حالتها، وتاريخ توفّرها للسحب.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "referred_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "referred_phone": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "referred_image": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "package_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "transaction_amount": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "commission_amount": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "commission_status": {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                "PENDING",
+                                "APPROVED",
+                                "AVAILABLE",
+                                "WITHDRAWN",
+                                "CANCELLED"
+                              ]
+                            },
+                            "referral_status": {
+                              "type": "string",
+                              "enum": [
+                                "PENDING_PAYMENT",
+                                "COMPLETED",
+                                "REJECTED"
+                              ]
+                            },
+                            "available_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "description": "المستخدم الحالي ليس مزوّد خدمة",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/referrals/summary": {
+        "get": {
+          "tags": [
+            "Referral Rewards (Provider)"
+          ],
+          "summary": "🆕🔒 إجماليات مكافآت الإحالة للمزوّد الحالي",
+          "description": "available_balance هو الرصيد الفعلي القابل للسحب فعليًا (= مجموع العمولات AVAILABLE ناقص أي طلبات سحب pending/approved/paid سابقة) — وليس available_total الذي هو مجموع العمولات AVAILABLE فقط بدون خصم السحوبات المحجوزة.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "referred_count": {
+                        "type": "integer"
+                      },
+                      "pending_total": {
+                        "type": "number"
+                      },
+                      "approved_total": {
+                        "type": "number"
+                      },
+                      "available_total": {
+                        "type": "number"
+                      },
+                      "withdrawn_total": {
+                        "type": "number"
+                      },
+                      "available_balance": {
+                        "type": "number",
+                        "description": "الرصيد الفعلي القابل للسحب الآن"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/referrals/withdrawals": {
+        "post": {
+          "tags": [
+            "Referral Rewards (Provider)"
+          ],
+          "summary": "🆕🔒 طلب سحب رصيد مكافآت الإحالة المتاح",
+          "description": "يُخصَم المبلغ فورًا من الرصيد المتاح (يُحجَز بحالة pending) عبر معاملة DB مع قفل صفوف (lockForUpdate) لمنع سحب أكبر من الرصيد الفعلي عند طلبين متزامنين. صرف/رفض الطلب من طرف الإدارة خارج نطاق هذا الإصدار من الـ API.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "amount"
+                  ],
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0.01
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "تم إنشاء طلب السحب بنجاح.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "$ref": "#/components/schemas/CommissionWithdrawalRequest"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "description": "فشل التحقق من صحة المدخلات، أو المبلغ أقل من الحد الأدنى للسحب (withdrawal-002)، أو أكبر من الرصيد المتاح (withdrawal-001)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LegacyErrorResponse"
+                  },
+                  "examples": {
+                    "insufficient_balance": {
+                      "value": {
+                        "errors": [
+                          {
+                            "code": "withdrawal-001",
+                            "message": "المبلغ المطلوب أكبر من الرصيد المتاح للسحب"
+                          }
+                        ]
+                      }
+                    },
+                    "below_minimum": {
+                      "value": {
+                        "errors": [
+                          {
+                            "code": "withdrawal-002",
+                            "message": "المبلغ أقل من الحد الأدنى للسحب"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Referral Rewards (Provider)"
+          ],
+          "summary": "🆕🔒 سجل طلبات سحب رصيد الإحالة للمزوّد الحالي",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/CommissionWithdrawalRequest"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/subscription-settings": {
+        "get": {
+          "tags": [
+            "Subscription Pricing Settings (Admin)"
+          ],
+          "summary": "🆕🔒 [مقيَّدة حاليًا] إعدادات تسعير الاشتراك الحالية ونسب الخصم",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "pricing_settings": {
+                            "$ref": "#/components/schemas/SubscriptionPricingSetting"
+                          },
+                          "duration_discounts": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/SubscriptionDurationDiscount"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "Subscription Pricing Settings (Admin)"
+          ],
+          "summary": "🆕🔒 [مقيَّدة حاليًا] تعديل السعر الأساسي والحدود المتضمَّنة",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "base_price",
+                    "included_zones",
+                    "included_categories",
+                    "extra_zone_price",
+                    "extra_category_price"
+                  ],
+                  "properties": {
+                    "base_price": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "included_zones": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "included_categories": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "extra_zone_price": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "extra_category_price": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم تحديث إعدادات التسعير بنجاح"
+                      },
+                      "data": {
+                        "$ref": "#/components/schemas/SubscriptionPricingSetting"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "422": {
+              "$ref": "#/components/responses/ValidationErrorModern"
+            }
+          }
+        }
+      },
+
+      "/subscription-settings/discounts": {
+        "put": {
+          "tags": [
+            "Subscription Pricing Settings (Admin)"
+          ],
+          "summary": "🆕🔒 [مقيَّدة حاليًا] تعديل نسب الخصم حسب مدة الاشتراك",
+          "description": "upsert لكل صف حسب duration_months (تحديث إن وُجد، إنشاء إن لم يوجد).",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "discounts"
+                  ],
+                  "properties": {
+                    "discounts": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "duration_months",
+                          "discount_percent"
+                        ],
+                        "properties": {
+                          "duration_months": {
+                            "type": "integer",
+                            "enum": [
+                              1,
+                              3,
+                              6,
+                              12
+                            ]
+                          },
+                          "discount_percent": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 100
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "success"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم تحديث نسب الخصم بنجاح"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/SubscriptionDurationDiscount"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "422": {
+              "$ref": "#/components/responses/ValidationErrorModern"
+            }
+          }
+        }
+      },
+
+      "/admin/auth/login": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "post": {
+          "tags": [
+            "Admin API - Authentication"
+          ],
+          "summary": "🆕 تسجيل دخول حساب إدارة (Admin) وإصدار Passport access_token",
+          "description": "بدون تسجيل دخول مسبق. يتحقق من admins.email/password (Hash::check) وأن admins.status='active'، ثم يصدر توكن عبر Passport بنفس آلية auth:api للعملاء لكن على نموذج Admin.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "email",
+                    "password"
+                  ],
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "password": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم تسجيل الدخول بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "access_token": {
+                            "type": "string"
+                          },
+                          "token_type": {
+                            "type": "string",
+                            "example": "Bearer"
+                          },
+                          "expires_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "admin": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "roles": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "أدوار Spatie Permissions للحساب الإداري"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "بيانات الدخول غير صحيحة",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "example": {
+                    "success": false,
+                    "message": "بيانات الدخول غير صحيحة"
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "الحساب معطَّل (admins.status != active)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "example": {
+                    "success": false,
+                    "message": "هذا الحساب معطل، يرجى التواصل مع الإدارة"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "email أو password مفقود/غير صحيح الصيغة",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/admin/auth/refresh-token": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "post": {
+          "tags": [
+            "Admin API - Authentication"
+          ],
+          "summary": "🆕⚠️ غير مُفعَّلة حاليًا — تجديد توكن الإدارة",
+          "description": "الدالة الحالية تُعيد دائمًا 501 لأن Refresh Tokens غير مُفعَّلة بإعداد Passport في هذا المشروع بعد. مسجَّلة هنا لتوثيق العقد المتوقَّع مستقبلًا.",
+          "responses": {
+            "501": {
+              "description": "غير مُنفَّذة بعد",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "example": {
+                    "success": false,
+                    "message": "يرجى تفعيل refresh tokens في Passport أولاً"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/admin/auth/logout": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "post": {
+          "tags": [
+            "Admin API - Authentication"
+          ],
+          "summary": "🆕🔒 تسجيل خروج (إلغاء التوكن الحالي فقط)",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "example": {
+                    "success": true,
+                    "message": "تم تسجيل الخروج بنجاح"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/auth/me": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Authentication"
+          ],
+          "summary": "🆕🔒 بيانات حساب الإدارة الحالي مع أدواره وصلاحياته",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "roles": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "permissions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/offers/statuses": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Offers"
+          ],
+          "summary": "🆕 قائمة حالات عرض الخدمة الخمس الصالحة (عام — بلا توكن)",
+          "description": "متاحة بدون تسجيل دخول عمدًا حتى تُبنى القائمة المنسدلة بالفرونت الإداري الخارجي قبل تسجيل الدخول أيضًا.",
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "accept",
+                                "unpaid",
+                                "rejected",
+                                "expired"
+                              ]
+                            },
+                            "label": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "example": [
+                          {
+                            "value": "pending",
+                            "label": "قيد المراجعة"
+                          },
+                          {
+                            "value": "accept",
+                            "label": "نشط"
+                          },
+                          {
+                            "value": "unpaid",
+                            "label": "غير مدفوع"
+                          },
+                          {
+                            "value": "rejected",
+                            "label": "مرفوض"
+                          },
+                          {
+                            "value": "expired",
+                            "label": "منتهي"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/admin/offers/{offer}/status": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "put": {
+          "tags": [
+            "Admin API - Offers"
+          ],
+          "summary": "🆕🔒 تغيير حالة عرض خدمة",
+          "description": "الحفظ عبر save() (وليس تحديث مباشر بالـ query builder) حتى يُطلق OfferObserver::updated() الذي يُبطل كاش كتالوج /services ويرسل إشعار Push لمزوّد الخدمة تلقائيًا عند تغيّر الحالة.",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "offer",
+              "in": "path",
+              "required": true,
+              "description": "معرّف العرض/الخدمة (Offer)",
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "accept",
+                        "unpaid",
+                        "rejected",
+                        "expired"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم تحديث حالة العرض بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            },
+            "422": {
+              "description": "status مفقودة أو ليست ضمن القيم الخمس الصالحة",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  },
+                  "example": {
+                    "success": false,
+                    "message": "حالة العرض غير صالحة"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/admin/dashboard/stats": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Dashboard"
+          ],
+          "summary": "🆕🔒 الإحصائيات الرئيسية للوحة تحكم إدارية خارجية",
+          "description": "استعلامات مباشرة (DB::table) بلا كاش. total_providers/active_providers من جدول service_providers.",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "total_estates": {
+                            "type": "integer"
+                          },
+                          "pending_estates": {
+                            "type": "integer"
+                          },
+                          "approved_estates": {
+                            "type": "integer"
+                          },
+                          "total_providers": {
+                            "type": "integer"
+                          },
+                          "active_providers": {
+                            "type": "integer"
+                          },
+                          "total_customers": {
+                            "type": "integer"
+                          },
+                          "total_packages": {
+                            "type": "integer"
+                          },
+                          "today_new_estates": {
+                            "type": "integer"
+                          },
+                          "today_new_customers": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/dashboard/recent-activities": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Dashboard"
+          ],
+          "summary": "🆕🔒 آخر العقارات ومزوّدي الخدمة المُضافين",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "limit",
+              "in": "query",
+              "description": "عدد العناصر في كل قائمة (عقارات/مزوّدو خدمة)",
+              "schema": {
+                "type": "integer",
+                "default": 10
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "recent_estates": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "created_at": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              }
+                            }
+                          },
+                          "recent_providers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "created_at": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/dashboard/chart-data": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Dashboard"
+          ],
+          "summary": "🆕🔒 عدد العقارات المُضافة يوميًا خلال آخر N يوم",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "days",
+              "in": "query",
+              "schema": {
+                "type": "integer",
+                "default": 30
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "count": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/providers/statuses": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Provider Approvals"
+          ],
+          "summary": "🆕🔒 قائمة حالات اعتماد طلب \"الترقية إلى مزوّد خدمة\" الثلاث",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string",
+                              "enum": [
+                                "pending",
+                                "approved",
+                                "rejected"
+                              ]
+                            },
+                            "label": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "example": [
+                          {
+                            "value": "pending",
+                            "label": "قيد المراجعة"
+                          },
+                          {
+                            "value": "approved",
+                            "label": "معتمد"
+                          },
+                          {
+                            "value": "rejected",
+                            "label": "مرفوض"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/providers/pending": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "get": {
+          "tags": [
+            "Admin API - Provider Approvals"
+          ],
+          "summary": "🆕🔒 قائمة طلبات مزوّدي الخدمة قيد المراجعة",
+          "description": "المستخدمون الذين لديهم سجل service_providers بحالة approval_status=pending (بعد نجاح أول دفعة اشتراك) وينتظرون قرار الأدمن.",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "phone": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "user_type": {
+                              "type": "string"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "provider": {
+                              "type": "object",
+                              "description": "علاقة service_providers المرتبطة، محمَّلة مسبقًا (with('provider'))"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+
+      "/admin/providers/{user}/approve": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "post": {
+          "tags": [
+            "Admin API - Provider Approvals"
+          ],
+          "summary": "🆕🔒 اعتماد طلب مزوّد الخدمة وتفعيل user_type=provider",
+          "description": "المكان الوحيد الذي يُفعِّل user_type=provider لعميل جديد في المسار الجديد (Flutter+API) — عبر $user->update() لا DB::table() حتى يمر التغيير عبر Eloquent فيُطلق UserObserver الذي يُسنِد دور ProviderRole::PROVIDER تلقائيًا. كما يُحوِّل أي عرض (Offer) بقي بحالة pending تابع لاشتراك مدفوع لهذا المستخدم إلى accept.",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "user",
+              "in": "path",
+              "required": true,
+              "description": "معرّف المستخدم (User) صاحب طلب الترقية",
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم اعتماد مزوّد الخدمة بنجاح"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "user_type": {
+                            "type": "string",
+                            "example": "provider"
+                          },
+                          "approval_status": {
+                            "type": "string",
+                            "example": "approved"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "هذا المستخدم لم يقدّم طلب مزوّد خدمة (لا يملك سجل service_providers)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "هذا الطلب ليس قيد المراجعة حاليًا (approval_status != pending)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/admin/providers/{user}/reject": {
+        "servers": [
+          {
+            "url": "https://app.abaadapp.sa/api",
+            "description": "🆕 REST API إدارية (Passport admin-api) — دون بادئة v1"
+          },
+          {
+            "url": "http://10.50.214.151/api",
+            "description": "بيئة التطوير المحلية (XAMPP / Local)"
+          }
+        ],
+        "post": {
+          "tags": [
+            "Admin API - Provider Approvals"
+          ],
+          "summary": "🆕🔒 رفض طلب مزوّد الخدمة",
+          "description": "لا يُغيَّر user_type (يبقى customer). يُحوِّل أي عرض بقي بحالة pending تابع لاشتراك مدفوع لهذا المستخدم إلى rejected.",
+          "security": [
+            {
+              "adminBearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "user",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "نجحت العملية، وتُعاد البيانات كما هو موضّح في المخطط (Schema) أدناه.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      },
+                      "message": {
+                        "type": "string",
+                        "example": "تم رفض طلب مزوّد الخدمة"
+                      },
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "approval_status": {
+                            "type": "string",
+                            "example": "rejected"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "description": "هذا المستخدم لم يقدّم طلب مزوّد خدمة",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "هذا الطلب ليس قيد المراجعة حاليًا",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "components": {
@@ -9312,6 +11442,87 @@
               "example": "تم حفظ البيانات"
             }
           }
+        },
+        "CommissionWithdrawalRequest": {
+          "type": "object",
+          "description": "🆕 طلب سحب رصيد مكافآت إحالة لمزوّد خدمة (commission_withdrawal_requests)",
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "user_id": {
+              "type": "integer"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "status": {
+              "type": "string",
+              "example": "pending"
+            },
+            "requested_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "processed_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "note": {
+              "type": "string",
+              "nullable": true
+            }
+          }
+        },
+        "SubscriptionPricingSetting": {
+          "type": "object",
+          "description": "🆕 إعداد عام واحد (صف id=1) لتسعير اشتراك مزوّد الخدمة — القيم الافتراضية: 99 ريال أساسي + منطقة/تصنيف واحد مُتضمَّن + 49 ريال لكل منطقة/تصنيف إضافي",
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "base_price": {
+              "type": "number",
+              "example": 99
+            },
+            "included_zones": {
+              "type": "integer",
+              "example": 1
+            },
+            "included_categories": {
+              "type": "integer",
+              "example": 1
+            },
+            "extra_zone_price": {
+              "type": "number",
+              "example": 49
+            },
+            "extra_category_price": {
+              "type": "number",
+              "example": 49
+            }
+          }
+        },
+        "SubscriptionDurationDiscount": {
+          "type": "object",
+          "description": "🆕 نسبة الخصم المطبَّقة على إجمالي قيمة اشتراك مزوّد الخدمة حسب مدة الاشتراك المختارة",
+          "properties": {
+            "duration_months": {
+              "type": "integer",
+              "enum": [
+                1,
+                3,
+                6,
+                12
+              ]
+            },
+            "discount_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
         }
       },
       "securitySchemes": {
@@ -9326,6 +11537,12 @@
           "in": "cookie",
           "name": "abaad_session",
           "description": "جلسة إدارة Laravel (guard: admin) — تُنشأ عبر تسجيل الدخول POST /admin/auth/login. كل طلبات POST/PUT/DELETE تحت هذا القسم محمية بـ VerifyCsrfToken middleware، فيجب إرسال حقل _token (القيمة من meta[name=csrf-token] أو حقل مخفي في النموذج المُحمَّل مسبقًا) ضمن جسم الطلب. ⚠️ هذه المسارات تستخدم نموذج العمل التقليدي للويب (Redirect + Flash Message عبر toastr())، وليست REST API بمعنى الكلمة — أغلب استجابات POST/PUT/DELETE هي 302 Redirect لا JSON، باستثناء طلبات GET التي ترسل ترويسة X-Requested-With: XMLHttpRequest والتي تُعاد بصيغة DataTables JSON."
+        },
+        "adminBearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "Passport Access Token (Admin Guard)",
+          "description": "🆕 رمز وصول صادر من Laravel Passport لحارس admin-api (نموذج App\\Models\\Admin) عبر POST /admin/auth/login — منفصل تمامًا عن bearerAuth (Passport لعملاء/مزوّدي الخدمة عبر نموذج User) رغم تطابق الآلية، وعن sessionAuth (جلسة لوحة الويب)."
         }
       }
     }

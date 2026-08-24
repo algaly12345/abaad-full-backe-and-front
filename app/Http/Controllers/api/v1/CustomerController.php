@@ -39,7 +39,12 @@ class CustomerController extends Controller
     {
         $data = $request->user();
         $data['userinfo'] = $data->agent;
-        if ($data->user_type === 'provider') {
+        // لا يُشترَط user_type === 'provider' هنا: عميل بصدد التقدّم كمزوّد
+        // خدمة (قبل اعتماد الأدمن — راجع ProviderApprovalStatus) يملك سجل
+        // service_providers فعلاً (أُنشئ عبر updateIdentity/updateBusinessInfo)
+        // ويحتاج التطبيق قراءته لمتابعة معالج "إضافة خدمة" رغم أن user_type
+        // ما زال 'customer' إلى حين الاعتماد.
+        if ($data->provider) {
             $data['provider'] = $data->provider;
         }
         $data['estate_count'] =(integer)$request->user()->estate->count();

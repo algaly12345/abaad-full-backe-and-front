@@ -81,17 +81,36 @@ class MoyasarPaymentController extends Controller
             $subscription->subscription_status = 'active';
             $subscription->save();
 
+            $provider = $subscription->user?->provider;
+            $isAlreadyApproved = $provider
+                && $provider->approval_status === \App\Enums\ProviderApprovalStatus::APPROVED;
+
             if ($subscription->offer_id) {
                 // fetch+save بدل mass update عبر query builder، حتى يمر التغيير عبر
                 // save() ويُطلق OfferObserver (mass update لا يُطلق أحداث Eloquent إطلاقًا).
                 $offer = Offer::find($subscription->offer_id);
                 if ($offer) {
-                    $offer->status = 'accept';
+                    // مزوّد معتمَد سلفاً: عرضه الجديد يُفعَّل فورًا كسابقيه.
+                    // مزوّد جديد/قيد المراجعة: يبقى العرض 'pending' فيظهر تلقائيًا
+                    // ضمن تبويب "قيد المراجعة" في شاشة "خدماتي" (بلا أي تعديل
+                    // إضافي بالفرونت) إلى أن يعتمده الأدمن — راجع
+                    // AdminProviderController::approve() الذي يُفعِّله حينها.
+                    $offer->status = $isAlreadyApproved ? 'accept' : 'pending';
                     $offer->save();
                 }
             }
 
             (new ReferralCommissionService())->createCommissionForPaidSubscription($subscription);
+
+            // كل دفعة ناجحة تضع طلب مزوّد الخدمة "قيد المراجعة" (أول مرة، أو
+            // إعادة تقديم بعد رفض سابق) — إلا لو كان معتمَداً سلفاً فلا داعي
+            // لإعادته لقائمة المراجعة بسبب اشتراك/عرض إضافي. لا تُفعِّل
+            // user_type=provider هنا مباشرة: الاعتماد الفعلي يتم يدويًا من
+            // الأدمن (admin/providers/{user}/approve) بعد مراجعة بياناته،
+            // راجع App\Enums\ProviderApprovalStatus.
+            if ($provider && ! $isAlreadyApproved) {
+                $provider->update(['approval_status' => \App\Enums\ProviderApprovalStatus::PENDING]);
+            }
 
             return view('payments.result', [
                 'success' => true,

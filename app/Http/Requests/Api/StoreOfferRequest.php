@@ -38,10 +38,14 @@ class StoreOfferRequest extends FormRequest
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
 
+            // بيانات الهوية بيانات ضرورية (يُطلب من المزوّد استكمالها)، لكنها
+            // لا تُحجَب بها عملية رفع إعلان الخدمة — يُسمح بإرسالها ناقصة مع
+            // العرض نفسه، وتُستكمل/تُراجَع لاحقًا يدويًا (لوحة الأدمن) بدل
+            // منع المستخدم من المتابعة في هذه اللحظة.
             'identity_type' => 'nullable|in:individual,company',
-            'identity_number' => 'nullable|required_if:identity_type,individual|string',
-            'freelance_membership_number' => 'nullable|required_if:identity_type,individual|string',
-            'commercial_registration_no' => 'nullable|required_if:identity_type,company|string',
+            'identity_number' => 'nullable|string',
+            'freelance_membership_number' => 'nullable|string',
+            'commercial_registration_no' => 'nullable|string',
             'contact_phone' => 'nullable|string|max:20',
             'contact_type' => 'nullable|string|max:20',
         ];

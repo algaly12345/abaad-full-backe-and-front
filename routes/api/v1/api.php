@@ -9,7 +9,7 @@ use App\Http\Controllers\api\v1\CategoryController;
 use App\Http\Controllers\api\v1\ConversationController;
 use App\Http\Controllers\api\v1\CustomerController;
 use App\Http\Controllers\api\v1\EstateController;
-use App\Http\Controllers\Api\v1\EstateSearchController;
+use App\Http\Controllers\api\v1\EstateSearchController;
 use App\Http\Controllers\api\v1\NotificationController;
 use App\Http\Controllers\api\v1\ReferralController;
 use App\Http\Controllers\api\v1\ServiceProvidertController;
@@ -19,12 +19,12 @@ use App\Http\Controllers\api\v1\ZonAndCityController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
-use App\Http\Controllers\Api\v1\SubscriptionSettingManagementController;
-use App\Http\Controllers\Api\v1\ServiceManagementController;
+use App\Http\Controllers\api\v1\SubscriptionSettingManagementController;
+use App\Http\Controllers\api\v1\ServiceManagementController;
 
-use App\Http\Controllers\Api\v1\ProviderPermissionController;
-use App\Http\Controllers\Api\v1\ReportController;
-use App\Http\Controllers\Api\v1\UserPermissionController;
+use App\Http\Controllers\api\v1\ProviderPermissionController;
+use App\Http\Controllers\api\v1\ReportController;
+use App\Http\Controllers\api\v1\UserPermissionController;
 
 Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
@@ -299,13 +299,21 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('/', [ServiceCatalogController::class, 'index']);
         Route::get('filters', [ServiceCatalogController::class, 'filtersData']);
 
+        // my-services مموضعة خارج بوابة provider.api عمدًا (بخلاف بقية هذه
+        // المجموعة): مزوّد قدَّم طلبه ودفع لكن ما زال ينتظر اعتماد الأدمن
+        // (approval_status=pending) يبقى userType='customer' فيُرفض بـ
+        // provider.api رغم أن لديه عرضًا خاصًا به قيد المراجعة يحتاج رؤيته
+        // في شاشة "خدماتي". آمن لأي مستخدم مسجّل دخوله: ServiceCatalogController
+        // ::myServices() يُقيَّد داخليًا بـ owner_id = auth()->id() دائمًا، فلا
+        // يمكن لأي حساب رؤية عروض غيره مهما كانت صلاحياته.
+        Route::middleware(['auth:api'])->group(function () {
+            Route::get('my-services', [ServiceCatalogController::class, 'myServices']);
+        });
+
         // محمي: يحتاج تسجيل دخول + صفة "مزود خدمة" فعلية (provider.api)
         // + صلاحية محددة لكل عملية (provider.permission) — هذه الطبقة الجديدة
         // هي ما يحول النظام من "كل مزود = كل الصلاحيات" إلى صلاحيات حقيقية.
         Route::middleware(['auth:api', 'provider.api'])->group(function () {
-            Route::get('my-services', [ServiceCatalogController::class, 'myServices'])
-                ->middleware('provider.permission:services.view');
-
             Route::post('{id}/toggle-status', [ServiceCatalogController::class, 'toggleStatus'])
                 ->middleware('provider.permission:services.toggle-status');
 
