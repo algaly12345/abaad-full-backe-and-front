@@ -95,6 +95,7 @@ class ServiceOfferResource extends JsonResource
                     'website'   => $provider->website,
                     'tiktok'    => $provider->tiktok,
                     'twitter'   => $provider->twitter,
+                    'youtube'   => $provider->youtube,
                     'image'     => $provider->image ? $this->r2BaseUrl() . '/profile/' . $provider->image : null,
                 ]);
             }),

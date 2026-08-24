@@ -40,10 +40,10 @@ class CustomerController extends Controller
         $data = $request->user();
         $data['userinfo'] = $data->agent;
         // لا يُشترَط user_type === 'provider' هنا: عميل بصدد التقدّم كمزوّد
-        // خدمة (قبل اعتماد الأدمن — راجع ProviderApprovalStatus) يملك سجل
-        // service_providers فعلاً (أُنشئ عبر updateIdentity/updateBusinessInfo)
-        // ويحتاج التطبيق قراءته لمتابعة معالج "إضافة خدمة" رغم أن user_type
-        // ما زال 'customer' إلى حين الاعتماد.
+        // خدمة (قبل نجاح أول دفعة اشتراك) يملك سجل service_providers فعلاً
+        // (أُنشئ عبر updateIdentity/updateBusinessInfo) ويحتاج التطبيق قراءته
+        // لمتابعة معالج "إضافة خدمة" رغم أن user_type ما زال 'customer' إلى
+        // حين نجاح الدفع (راجع MoyasarPaymentController::callback).
         if ($data->provider) {
             $data['provider'] = $data->provider;
         }

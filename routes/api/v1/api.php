@@ -300,12 +300,10 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('filters', [ServiceCatalogController::class, 'filtersData']);
 
         // my-services مموضعة خارج بوابة provider.api عمدًا (بخلاف بقية هذه
-        // المجموعة): مزوّد قدَّم طلبه ودفع لكن ما زال ينتظر اعتماد الأدمن
-        // (approval_status=pending) يبقى userType='customer' فيُرفض بـ
-        // provider.api رغم أن لديه عرضًا خاصًا به قيد المراجعة يحتاج رؤيته
-        // في شاشة "خدماتي". آمن لأي مستخدم مسجّل دخوله: ServiceCatalogController
-        // ::myServices() يُقيَّد داخليًا بـ owner_id = auth()->id() دائمًا، فلا
-        // يمكن لأي حساب رؤية عروض غيره مهما كانت صلاحياته.
+        // المجموعة): آمنة لأي مستخدم مسجّل دخوله بلا شرط user_type، لأن
+        // ServiceCatalogController::myServices() يُقيَّد داخليًا بـ
+        // owner_id = auth()->id() دائمًا، فلا يمكن لأي حساب رؤية عروض غيره
+        // مهما كانت صلاحياته.
         Route::middleware(['auth:api'])->group(function () {
             Route::get('my-services', [ServiceCatalogController::class, 'myServices']);
         });

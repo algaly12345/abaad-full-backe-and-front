@@ -211,17 +211,6 @@ class ServiceProvidertController extends Controller
     {
         $user = auth()->user();
 
-        // مزوّد لديه طلب قيد المراجعة فعلاً (دفع سابقًا وينتظر قرار الأدمن) لا
-        // يجوز أن يرسل طلبًا جديدًا حتى يُحسَم الأول (اعتماد/رفض) — راجع
-        // App\Enums\ProviderApprovalStatus. لا يمنع هذا مزوّداً معتمَداً سلفاً
-        // من إضافة عروض إضافية بلا حدّ.
-        if ($user->provider?->approval_status === \App\Enums\ProviderApprovalStatus::PENDING) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'لديك طلب مزوّد خدمة قيد المراجعة حاليًا — يجب انتظار قرار الإدارة قبل إضافة خدمة جديدة',
-            ], 422);
-        }
-
         try {
             $result = $this->serviceProviderService->createOfferAndSubscription(
                 $request->validated(),

@@ -25,7 +25,6 @@ class ServiceProvider extends Authenticatable
        'commercial_registration_no',
        'latitude',
        'longitude',
-       'approval_status'
     ];
 
 

@@ -3,7 +3,6 @@
 use App\Http\Controllers\api\v1\admin\AdminAuthController;
 use App\Http\Controllers\api\v1\admin\AdminDashboardController;
 use App\Http\Controllers\api\v1\admin\AdminOfferController;
-use App\Http\Controllers\api\v1\admin\AdminProviderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,7 +26,6 @@ Route::group(['prefix' => 'admin'], function () {
     // ── قائمة الحالات ثابتة وغير حساسة — متاحة بدون توكن حتى تُبنى
     // القائمة المنسدلة بالفرونت قبل تسجيل الدخول أيضاً ──────────
     Route::get('offers/statuses', [AdminOfferController::class, 'statuses']);
-    Route::get('providers/statuses', [AdminProviderController::class, 'statuses']);
 
     // ── كل ما بعد هذا يتطلب تسجيل دخول صحيح كأدمن ──────────────
     Route::group(['middleware' => 'auth:admin-api'], function () {
@@ -44,11 +42,6 @@ Route::group(['prefix' => 'admin'], function () {
 
         // ── تغيير حالة عرض خدمة ─────────────────────────────────
         Route::put('offers/{offer}/status', [AdminOfferController::class, 'updateStatus']);
-
-        // ── مراجعة/اعتماد طلبات "الترقية إلى مزوّد خدمة" ─────────
-        Route::get('providers/pending', [AdminProviderController::class, 'pending']);
-        Route::post('providers/{user}/approve', [AdminProviderController::class, 'approve']);
-        Route::post('providers/{user}/reject', [AdminProviderController::class, 'reject']);
 
     });
 

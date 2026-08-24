@@ -6,6 +6,7 @@ use App\Models\Offer;
 use App\Models\ServiceProviderSubscription;
 use App\Models\ServiceType;
 use App\Models\Category;
+use App\Models\User;
 use App\Models\Zone;
 use App\Models\SubscriptionDurationDiscount;
 use App\Models\SubscriptionPricingSetting;
@@ -88,6 +89,14 @@ class ServiceProviderService
             $identityUpdates['commercial_registration_no'] = $data['commercial_registration_no'];
         }
         $user->provider?->update($identityUpdates);
+
+        // إرسال بيانات الهوية (فرد/منشأة) وحده كافٍ ليصبح الحساب مزوّد خدمة
+        // فعلياً فوراً — بلا انتظار إرسال عرض خدمة أو نجاح دفع. $user->update()
+        // لا DB::table() حتى يمر التغيير عبر Eloquent فيُطلق UserObserver الذي
+        // يُسنِد دور ProviderRole::PROVIDER تلقائياً.
+        if (!$user->isProvider()) {
+            $user->update(['user_type' => User::TYPE_PROVIDER]);
+        }
     }
 
     /**
@@ -118,7 +127,8 @@ class ServiceProviderService
             // يُحفَظ مرة واحدة داخل service_providers ليُقرَأ لاحقاً من التطبيق
             // فلا يُطلَب من المزوّد إعادة إدخاله في كل عرض جديد. عادة تصل هذه
             // الحقول محفوظة سلفاً (حُفظت فوراً من ProviderUpgradeScreen عبر
-            // updateProviderIdentity())، فهذا مجرد تأكيد إضافي غير ضار.
+            // updateProviderIdentity()، وهي أيضاً نقطة الترقية إلى provider —
+            // راجعها أعلاه)، فهذا مجرد تأكيد إضافي غير ضار.
             if (!empty($data['identity_type'])) {
                 $this->updateProviderIdentity($data, $user);
             }
