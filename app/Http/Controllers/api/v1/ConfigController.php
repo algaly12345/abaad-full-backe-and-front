@@ -90,7 +90,7 @@ public function configuration()
                 'review_image_url' => $r2Base . '/reviews',
                 'agent_image_url' => $r2Base . '/agent',
                 'activities_image_url' => $r2Base . '/activities',
-                'provider_image_url' => $r2Base . '/service-providers',
+                'provider_image_url' => $r2Base . '',
                 'banners' => $r2Base . '/banners',
                 'notification_image_url' => $r2Base . '/notification',
                 'chat_image_url' => $r2Base . '/conversation',
