@@ -7,7 +7,7 @@ use App\Models\ServiceProvider;
 
 class BannerLogic
 {
-    public static function get_banners($zone_id)
+    public static function get_banners($zone_id = null)
     {
         // تم حذف قيد المنطقة (zone_id) بالكامل — البانرات دلوقتي بترجع
         // كلها بغض النظر عن المنطقة، بدل ما تتقيّد بمنطقة معيّنة.
