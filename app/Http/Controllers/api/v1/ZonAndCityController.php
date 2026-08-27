@@ -14,16 +14,19 @@ use Illuminate\Http\Request;
 
 class ZonAndCityController extends Controller
 {
-    public function all()
-    {
-        try {
-            $zones = Zone::where(['status'=>'active'])->withCount(['estate'])->latest()->orderBy('id','desc')->get();
-            return response()->json(EstateLogic::category_data_formatting($zones, true), 200);
-//            return response()->json($zones, 200);
-        } catch (\Exception $e) {
-            return response()->json([], 200);
-        }
+ public function all()
+{
+    try {
+        $zones = Zone::where(['status'=>'active'])
+            ->withCount(['estate'])
+            ->orderByDesc('estate_count')
+            ->get();
+
+        return response()->json(EstateLogic::category_data_formatting($zones, true), 200);
+    } catch (\Exception $e) {
+        return response()->json([], 200);
     }
+}
 
 
     public function cities_by_zoneId(Request $request)
