@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BusinessSetting;
 use App\Models\FirebaseCredential;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
@@ -15,12 +16,14 @@ use Illuminate\Support\Facades\Log;
  * يونيو 2024 وترجع 404 دائمًا مهما كان المفتاح صحيحًا.
  *
  * يتطلب مفتاح حساب خدمة Firebase (Service Account JSON، من Firebase Console
- * → Project Settings → Service Accounts → Generate new private key) لمشروع
- * FIREBASE_PROJECT_ID المحدد في .env. يُقرأ أولًا من جدول firebase_credentials
- * (مشفّر، يُعبَّى عبر أمر `firebase:set-credentials` — الطريقة المفضّلة لأنها
- * لا تحتاج نشر الملف عبر Git أو رفعه يدويًا لكل بيئة)، وإن لم يوجد صف يُرجع
- * للملف storage/app/firebase/service-account.json كخيار احتياطي (مفيد للتطوير
- * المحلي).
+ * → Project Settings → Service Accounts → Generate new private key) ومعرف
+ * المشروع (project_id). كلاهما يُخزَّن في قاعدة البيانات بدل .env حتى لا
+ * يضيع أي منهما عند رفع/نقل السيرفر:
+ * - مفتاح الحساب: جدول firebase_credentials (مشفّر)
+ * - project_id: جدول business_settings (type = fcm_project_id)
+ * كلاهما يُعبَّى معًا عبر أمر `firebase:set-credentials`. وإن لم يوجد صف في
+ * firebase_credentials يُرجع للملف storage/app/firebase/service-account.json
+ * كخيار احتياطي (مفيد للتطوير المحلي).
  */
 class FcmV1Service
 {
@@ -45,9 +48,9 @@ class FcmV1Service
             return false;
         }
 
-        $projectId = env('FIREBASE_PROJECT_ID');
+        $projectId = BusinessSetting::where('type', 'fcm_project_id')->value('value');
         if (!$projectId) {
-            Log::info('FCM v1: FIREBASE_PROJECT_ID غير مضبوط في .env');
+            Log::info('FCM v1: لا يوجد fcm_project_id في جدول business_settings (شغّل أمر firebase:set-credentials)');
             return false;
         }
 

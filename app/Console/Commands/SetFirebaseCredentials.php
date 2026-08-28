@@ -2,13 +2,15 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BusinessSetting;
 use App\Models\FirebaseCredential;
 use Illuminate\Console\Command;
 
 /**
  * يُشغَّل مرة واحدة (أو عند تدوير المفتاح) لتخزين محتوى service-account.json
- * في قاعدة البيانات (مشفّرًا) بدل الاعتماد على ملف على السيرفر. راجع
- * FcmV1Service::getAccessToken() الذي يقرأ من هذا الجدول أولاً.
+ * في قاعدة البيانات (مشفّرًا) بدل الاعتماد على ملف على السيرفر، ولتخزين
+ * project_id في جدول business_settings بدل .env. راجع FcmV1Service الذي
+ * يقرأ من الجدولين هذين فقط (لا يعتمد على .env إطلاقًا لهذي القيم).
  */
 class SetFirebaseCredentials extends Command
 {
@@ -45,15 +47,13 @@ class SetFirebaseCredentials extends Command
             }
         }
 
-        $envProjectId = env('FIREBASE_PROJECT_ID');
-        if ($envProjectId && $decoded['project_id'] !== $envProjectId) {
-            $this->warn("تنبيه: project_id في الملف ({$decoded['project_id']}) يختلف عن FIREBASE_PROJECT_ID في .env ({$envProjectId}).");
-        }
-
         FirebaseCredential::query()->delete();
         FirebaseCredential::create(['payload' => $decoded]);
 
-        $this->info('تم حفظ مفتاح Firebase في قاعدة البيانات بنجاح.');
+        BusinessSetting::where('type', 'fcm_project_id')->delete();
+        BusinessSetting::insert(['type' => 'fcm_project_id', 'value' => $decoded['project_id']]);
+
+        $this->info('تم حفظ مفتاح Firebase و project_id في قاعدة البيانات بنجاح.');
         if ($path) {
             $this->warn("لا تنسى حذف الملف الأصلي من السيرفر بعد التأكد: {$path}");
         }
