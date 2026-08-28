@@ -244,6 +244,18 @@ class Offer extends Model
         return $query;
     }
 
+    public function scopeCreatedBetween($query, $from, $to)
+    {
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        return $query;
+    }
+
     public function scopeSearch($query, ?string $term)
     {
         if (!$term) {

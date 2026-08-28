@@ -124,6 +124,7 @@ class ServiceCatalogService
             ->offerType($filters['offer_type'] ?? null)
             ->priceBetween($filters['min_price'] ?? null, $filters['max_price'] ?? null)
             ->discountBetween($filters['min_discount'] ?? null, $filters['max_discount'] ?? null)
+            ->createdBetween($filters['from_date'] ?? null, $filters['to_date'] ?? null)
             ->search($filters['search'] ?? null);
 
         $hasDistance = $this->applyDistanceSelection($query, $filters);
@@ -241,6 +242,8 @@ class ServiceCatalogService
             'max_price'       => $filters['max_price'] ?? null,
             'min_discount'    => $filters['min_discount'] ?? null,
             'max_discount'    => $filters['max_discount'] ?? null,
+            'from_date'       => $filters['from_date'] ?? null,
+            'to_date'         => $filters['to_date'] ?? null,
             'search'          => mb_strtolower(trim((string) ($filters['search'] ?? ''))),
             'sort_by'         => $filters['sort_by'] ?? 'latest',
             'only_active'     => (bool) ($filters['only_active'] ?? true),

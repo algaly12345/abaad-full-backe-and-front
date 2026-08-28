@@ -44,6 +44,11 @@ class GetServicesRequest extends FormRequest
 
             'search'              => 'nullable|string|max:150',
 
+            // فلتر فترة الإنشاء (created_at) — يُستخدم حاليًا فقط من لوحة إحصائيات
+            // مزود الخدمة (my-services) لعرض/تلخيص الخدمات المضافة خلال فترة محددة.
+            'from_date'           => 'nullable|date',
+            'to_date'             => 'nullable|date|after_or_equal:from_date',
+
             'sort_by'             => 'nullable|string|in:latest,oldest,price_asc,price_desc,discount_desc,expiry_soon,nearest',
 
             // "الأقرب إليّ" بالفرونت: موقع المستخدم الحالي + نطاق بحث اختياري بالكيلومتر.

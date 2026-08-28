@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\GetProviderDashboardRequest;
 use App\Http\Requests\Api\GetReportChartRequest;
 use App\Services\Reports\EstateReportService;
 use App\Services\Reports\ProviderReportService;
 use App\Services\Reports\UserReportService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /**
  * تقارير وإحصائيات عبر API. المسارات مقسّمة لمستويين بحراسة مختلفة تمامًا
@@ -32,9 +33,12 @@ class ReportController extends Controller
     ) {
     }
 
-    public function providerDashboard(Request $request): JsonResponse
+    public function providerDashboard(GetProviderDashboardRequest $request): JsonResponse
     {
         $providerId = $request->user(self::AUTH_GUARD)->id;
+        $data = $request->validated();
+        $periodKey = $data['period'] ?? 'all';
+        [$from, $to] = $this->resolvePeriodRange($periodKey, $data['from'] ?? null, $data['to'] ?? null);
 
         return response()->json([
             'status' => 'success',
@@ -42,9 +46,40 @@ class ReportController extends Controller
                 'summary' => $this->providerReportService->summary($providerId),
                 'views_by_zone' => $this->providerReportService->viewsByZone($providerId),
                 'views_by_category' => $this->providerReportService->viewsByCategory($providerId),
-                'subscriptions' => $this->providerReportService->activeSubscriptions($providerId),
+                'subscriptions' => $this->providerReportService->subscriptionsOverview($providerId),
+                'period' => [
+                    'key' => $periodKey,
+                    'from' => $from?->toDateString(),
+                    'to' => $to?->toDateString(),
+                ],
+                'period_summary' => $this->providerReportService->periodSummary($providerId, $from, $to),
+                'period_subscriptions' => $this->providerReportService->periodSubscriptions($providerId, $from, $to),
             ],
         ], 200);
+    }
+
+    /**
+     * يحوّل مفتاح الفترة المختصر (today/week/month/all/custom) إلى حدود
+     * تاريخ فعلية [$from, $to]. 'all' تعيد [null, null] (بلا أي تقييد زمني)،
+     * وتُستخدم Carbon::now() كحد أعلى للفترات الجاهزة كي لا تتضمن أي بيانات
+     * "مستقبلية" لو اختلفت ساعة الخادم عن توقعات العميل.
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    private function resolvePeriodRange(string $period, ?string $from, ?string $to): array
+    {
+        $now = Carbon::now();
+
+        return match ($period) {
+            'today' => [$now->copy()->startOfDay(), $now],
+            'week' => [$now->copy()->startOfWeek(), $now],
+            'month' => [$now->copy()->startOfMonth(), $now],
+            'custom' => [
+                $from ? Carbon::parse($from)->startOfDay() : null,
+                $to ? Carbon::parse($to)->endOfDay() : null,
+            ],
+            default => [null, null],
+        };
     }
 
     public function globalOverview(): JsonResponse
