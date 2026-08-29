@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "D9U5R92S4P.sa.pdm.abaad.abaad",
-        "paths": ["/details/*"]
+        "paths": ["/ref/*", "/details/*"]
       }
     ]
   }
