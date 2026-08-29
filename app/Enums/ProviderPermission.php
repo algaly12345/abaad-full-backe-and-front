@@ -23,6 +23,10 @@ namespace App\Enums;
  * REPORTS_VIEW_OWN على العكس صلاحية آمنة تخص بيانات المزود نفسه فقط (عروضه
  * الذاتية، مشاهداته، اشتراكاته)، فتُمنح تلقائيًا لدور PROVIDER في
  * ProviderPermissionsSeeder.
+ *
+ * REFERRALS_MANAGE_GLOBAL بنفس فلسفة PLANS_MANAGE_GLOBAL: إعدادات نظام
+ * مكافآت الإحالة (نسبة العمولة، فترة الانتظار، نافذة الإحالة، الحد الأدنى
+ * للسحب) قيم عالمية على مستوى المنصة، لا تُمنح لأي دور افتراضيًا.
  */
 enum ProviderPermission
 {
@@ -40,6 +44,9 @@ enum ProviderPermission
     // إحصائيات عامة على مستوى المنصة كلها — إدارية، لا تُمنح لأي دور افتراضيًا.
     const REPORTS_VIEW_GLOBAL = 'reports.view-global';
 
+    // إعدادات نظام مكافآت الإحالة — إدارية، لا تُمنح لأي دور افتراضيًا.
+    const REFERRALS_MANAGE_GLOBAL = 'referrals.manage-global';
+
     const LIST = [
         self::SERVICES_VIEW,
         self::SERVICES_CREATE,
@@ -49,5 +56,6 @@ enum ProviderPermission
         self::PLANS_MANAGE_GLOBAL,
         self::REPORTS_VIEW_OWN,
         self::REPORTS_VIEW_GLOBAL,
+        self::REFERRALS_MANAGE_GLOBAL,
     ];
 }

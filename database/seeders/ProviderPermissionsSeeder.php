@@ -18,6 +18,7 @@ use Spatie\Permission\Models\Role;
  * - عدم منح الصلاحيات الإدارية مثل:
  *      - plans.manage-global
  *      - reports.view-global
+ *      - referrals.manage-global
  * - منح الدور لجميع المستخدمين الحاليين من نوع provider.
  *
  * آمن لإعادة التشغيل (Idempotent).
@@ -59,6 +60,7 @@ class ProviderPermissionsSeeder extends Seeder
          | لا يتم منح الصلاحيات الإدارية مثل:
          | - PLANS_MANAGE_GLOBAL
          | - REPORTS_VIEW_GLOBAL
+         | - REFERRALS_MANAGE_GLOBAL
          |
          */
         $defaultPermissions = Permission::query()

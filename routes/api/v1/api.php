@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\v1\ServiceCatalogController;
 use App\Http\Controllers\api\v1\SubscriptionSettingManagementController;
+use App\Http\Controllers\api\v1\ReferralSettingManagementController;
 use App\Http\Controllers\api\v1\ServiceManagementController;
 
 use App\Http\Controllers\api\v1\ProviderPermissionController;
@@ -201,6 +202,24 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('summary', [ReferralController::class, 'summary']);
         Route::post('withdrawals', [ReferralController::class, 'requestWithdrawal']);
         Route::get('withdrawals', [ReferralController::class, 'withdrawals']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Referral Settings (إعدادات نظام مكافآت الإحالة) — عبر API
+    |--------------------------------------------------------------------------
+    | ⚠️ نفس تنبيه "Subscription Pricing Settings": لا يوجد حاليًا حارس API
+    | مخصّص لحساب إداري حقيقي، فهذه المسارات مقيَّدة بصلاحية
+    | "referrals.manage-global" التي لا يملكها أي مزود خدمة افتراضيًا (انظر
+    | ProviderPermissionsSeeder). لمنحها صراحةً لحساب معيّن:
+    |   $user->givePermissionTo(\App\Enums\ProviderPermission::REFERRALS_MANAGE_GLOBAL);
+    */
+    Route::group([
+        'prefix' => 'referral-settings',
+        'middleware' => ['auth:api', 'provider.api', 'provider.permission:referrals.manage-global'],
+    ], function () {
+        Route::get('/', [ReferralSettingManagementController::class, 'show']);
+        Route::put('/', [ReferralSettingManagementController::class, 'update']);
     });
 
     /*
