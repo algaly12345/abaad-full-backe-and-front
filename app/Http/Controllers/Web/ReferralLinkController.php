@@ -31,6 +31,17 @@ class ReferralLinkController extends Controller
         $isAndroid = str_contains($userAgent, 'Android');
         $isIOS = (bool) preg_match('/iPhone|iPad|iPod/', $userAgent);
 
+        // تشخيص مؤقت — يُحذف بعد تأكيد سبب اختلاف السلوك بين curl والجهاز
+        // الحقيقي. يسجل كل طلب حتى لو الكود معروف، عكس اللوق فوق.
+        Log::info('Referral link diagnostic', [
+            'code' => $code,
+            'exists' => $exists,
+            'ip' => $request->ip(),
+            'user_agent' => $userAgent,
+            'is_android' => $isAndroid,
+            'is_ios' => $isIOS,
+        ]);
+
         if ($isIOS) {
             // نفس نمط android_sha256_fingerprints: business_settings أولاً
             // (قابل للتعديل من قاعدة البيانات مباشرة بدون وصول SSH/.env على
