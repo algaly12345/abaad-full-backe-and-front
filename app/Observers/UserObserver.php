@@ -34,6 +34,7 @@ class UserObserver
     {
         $this->ensureProviderRole($user);
         $this->notifyAccountStatus($user);
+        $this->notifyVerificationStatus($user);
     }
 
     private function notifyAccountStatus(User $user): void
@@ -46,6 +47,17 @@ class UserObserver
             ProviderPushNotifier::notify($user, 'account_status', 'تم تفعيل حسابك', 'أصبح حسابك مفعّلاً، يمكنك المتابعة.');
         } else {
             ProviderPushNotifier::notify($user, 'account_status', 'تم تعطيل حسابك', 'تم تعطيل حسابك من قِبل الإدارة.');
+        }
+    }
+
+    private function notifyVerificationStatus(User $user): void
+    {
+        if (!$user->wasChanged('account_verification') || !$user->isProvider()) {
+            return;
+        }
+
+        if ((int) $user->account_verification === 1) {
+            ProviderPushNotifier::notify($user, 'verification_status', 'تم توثيق هويتك', 'تم توثيق هويتك بنجاح عبر نفاذ.');
         }
     }
 

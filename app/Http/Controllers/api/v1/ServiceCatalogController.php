@@ -117,7 +117,20 @@ class ServiceCatalogController extends Controller
             ], 422);
         }
 
-        $offer->status = $offer->status === 'accept' ? 'pending' : 'accept';
+        $willActivate = $offer->status !== 'accept';
+
+        if ($willActivate) {
+            $paymentStatus = $offer->latestSubscription?->payment_status;
+
+            if (in_array($paymentStatus, ['unpaid', 'failed'], true)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لا يمكن تفعيل الخدمة قبل إتمام عملية الدفع',
+                ], 422);
+            }
+        }
+
+        $offer->status = $willActivate ? 'accept' : 'pending';
         $offer->save();
 
         ServiceCatalogService::flushCache();

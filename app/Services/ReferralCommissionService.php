@@ -7,6 +7,7 @@ use App\Models\Referral;
 use App\Models\ReferralSetting;
 use App\Models\ServiceProviderSubscription;
 use App\Models\WalletTransaction;
+use App\Services\ProviderPushNotifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -129,6 +130,14 @@ class ReferralCommissionService
                 $commission->available_at = now();
                 $commission->save();
 
+                ProviderPushNotifier::notify(
+                    $commission->user,
+                    'commission_status',
+                    'عمولة إحالة متاحة للسحب',
+                    'أصبحت عمولة إحالة بقيمة ' . round($commission->amount, 2) . ' ر.س متاحة للسحب.',
+                    $commission->id
+                );
+
                 return 'approved';
             });
 
@@ -233,6 +242,14 @@ class ReferralCommissionService
 
             $commission->status = Commission::STATUS_CANCELLED;
             $commission->save();
+
+            ProviderPushNotifier::notify(
+                $commission->user,
+                'commission_status',
+                'تم إلغاء عمولة إحالة',
+                'تم إلغاء عمولة إحالة بقيمة ' . round($commission->amount, 2) . ' ر.س بسبب استرداد اشتراك المُحال.',
+                $commission->id
+            );
         });
     }
 

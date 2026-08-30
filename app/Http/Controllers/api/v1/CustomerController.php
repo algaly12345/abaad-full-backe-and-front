@@ -476,7 +476,7 @@ public function checkRequestStatus(Request $request)
             //     return response()->json(['message' => 'User not found'], 404);
             // }
 
-            User::where(['id' => $request->user()->id])->update([
+            $request->user()->update([
                 'account_verification' =>1
             ]);
             return response()->json([  'message' => $responseBody['status']], 200);
@@ -527,9 +527,10 @@ public function checkRequestStatusWeb(Request $request)
         if (isset($responseBody['status']) && $responseBody['status'] === 'COMPLETED') {
 
 
-            User::where(['id' =>  $request->input('user_id')])->update([
-                'account_verification' =>1
-            ]);
+            $user = User::find($request->input('user_id'));
+            if ($user) {
+                $user->update(['account_verification' => 1]);
+            }
             return response()->json([  'message' => $responseBody['status']], 200);
         } else {
             return response()->json(['message' => 'Status is not COMPLETED', 'response' => $responseBody], 400);

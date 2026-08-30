@@ -112,24 +112,19 @@ class MoyasarPaymentController extends Controller
     }
 
     /**
-     * المفتاح السري يُقرأ أولاً من business_settings (قابل للتعديل مباشرة
-     * من قاعدة البيانات دون الحاجة لتعديل .env)، ويسقط احتياطياً على
-     * .env إن لم يكن الصف موجوداً أو كانت قيمته فارغة.
+     * المفتاح السري يُقرأ حصراً من business_settings — لا يوجد سقوط احتياطي
+     * على .env، حتى لا تُستخدم قيمة .env القديمة/الوهمية بالخطأ.
      */
     private function secretKey(): ?string
     {
-        $value = Helpers::get_business_settings('moyasar_secret_key');
-
-        return filled($value) ? $value : config('services.moyasar.secret_key');
+        return Helpers::get_business_settings('moyasar_secret_key');
     }
 
     /**
-     * نفس منطق secretKey() — يقرأ من business_settings أولاً، ثم .env احتياطياً.
+     * نفس منطق secretKey() — قراءة حصراً من business_settings.
      */
     private function publicKey(): ?string
     {
-        $value = Helpers::get_business_settings('moyasar_public_key');
-
-        return filled($value) ? $value : config('services.moyasar.public_key');
+        return Helpers::get_business_settings('moyasar_public_key');
     }
 }
