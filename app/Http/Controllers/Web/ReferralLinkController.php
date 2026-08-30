@@ -79,10 +79,16 @@ class ReferralLinkController extends Controller
      * Store يفتح التطبيق بدون أي معرفة بكود الإحالة. الحل الشائع (نفس فكرة
      * AppsFlyer/Branch): نكتب الكود بالحافظة (clipboard) قبل التحويل
      * للمتجر، والتطبيق يقرأه عند أول تشغيل (انظر
-     * ReferralCodeStorage.captureFromPasteboard في Flutter). كتابة
-     * الحافظة تحتاج تنفيذ JS بالمتصفح فعليًا، فهذا الفرع وحده يخدم صفحة
-     * HTML صغيرة بدل تحويل HTTP بحت — البادئة abaad_ref: تميّز قيمتنا عن
-     * أي نص آخر ينسخه المستخدم لاحقًا فيتفادى التطبيق التقاطه خطأً.
+     * ReferralCodeStorage.captureFromPasteboard في Flutter).
+     *
+     * مهم: navigator.clipboard.writeText في WebKit/Safari تُرفض بصمت (بدون
+     * أي استثناء ظاهر) إن لم تُستدعَ مباشرة داخل لفتة مستخدم حقيقية (نقرة).
+     * الاستدعاء التلقائي عند تحميل الصفحة (كما كان سابقًا، مع تحويل فوري عبر
+     * meta refresh) لا يملك أي لفتة، فيفشل النسخ في كل مرة عمليًا على جهاز
+     * آيفون حقيقي — لذلك لا يوجد أي تحويل تلقائي هنا؛ الزر نفسه هو اللفتة،
+     * ونكتب للحافظة داخل معالج النقر مباشرة قبل التنقّل للمتجر. مهلة
+     * setTimeout احتياطية فقط لمن لا يضغط (تحويل بلا نسخ، أفضل من بقائه
+     * عالقًا على الصفحة).
      */
     private function iosStoreRedirectWithAttribution(string $appStoreUrl, string $code)
     {
@@ -91,24 +97,64 @@ class ReferralLinkController extends Controller
             JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
         );
         $jsUrl = json_encode($appStoreUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $metaUrl = htmlspecialchars($appStoreUrl, ENT_QUOTES);
+        $hrefUrl = htmlspecialchars($appStoreUrl, ENT_QUOTES);
 
         $html = <<<HTML
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url={$metaUrl}">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أبعاد</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: #0f172a; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .wrap { text-align: center; padding: 24px; }
+  a.btn {
+    display: inline-block; padding: 16px 36px; margin-top: 8px;
+    background: #2563eb; color: #fff; text-decoration: none;
+    border-radius: 12px; font-size: 18px; font-weight: 600;
+  }
+  p { opacity: .75; margin-top: 18px; font-size: 14px; }
+</style>
 </head>
 <body>
+<div class="wrap">
+  <a href="{$hrefUrl}" class="btn" id="go">المتابعة إلى App Store</a>
+  <p>اضغط للمتابعة إلى التطبيق</p>
+</div>
 <script>
 (function () {
-    try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText({$pasteboardValue});
-        }
-    } catch (e) {}
-    window.location.replace({$jsUrl});
+    var appStoreUrl = {$jsUrl};
+    var pasteboardValue = {$pasteboardValue};
+    var navigated = false;
+
+    function goToStore() {
+        if (navigated) return;
+        navigated = true;
+        window.location.replace(appStoreUrl);
+    }
+
+    function writeClipboard() {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(pasteboardValue);
+            }
+        } catch (e) {}
+        return Promise.resolve();
+    }
+
+    document.getElementById('go').addEventListener('click', function (event) {
+        event.preventDefault();
+        writeClipboard().catch(function () {}).then(goToStore);
+    });
+
+    // لمن لا يضغط الزر: تحويل احتياطي بلا نسخ حافظة، بدل بقائه عالقًا هنا.
+    setTimeout(goToStore, 4000);
 })();
 </script>
 </body>
