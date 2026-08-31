@@ -201,11 +201,14 @@
             element: '.mysr-form',
             amount: {{ $amountHalalas }},
             currency: 'SAR',
-            description: 'اشتراك رقم: {{ $subscription->subscription_number }}',
-            publishable_api_key: '{{ $publicKey }}',
-            callback_url: '{{ $callbackUrl }}',
+            description: {!! json_encode('اشتراك رقم: ' . $subscription->subscription_number) !!},
+            publishable_api_key: {!! json_encode($publicKey) !!},
+            {{-- json_encode + raw echo، لأن الإخراج الافتراضي المُهرَّب يحوّل
+                 الـ & في الرابط الموقّع إلى amp; فيصل معامل التوقيع باسم خاطئ
+                 ويفشل الفحص بـ 403. --}}
+            callback_url: {!! json_encode($callbackUrl) !!},
             metadata: {
-                subscription_number: '{{ $subscription->subscription_number }}'
+                subscription_number: {!! json_encode($subscription->subscription_number) !!}
             },
             methods: ['creditcard']
         });
