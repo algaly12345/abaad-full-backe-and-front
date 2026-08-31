@@ -8,7 +8,6 @@ use App\Models\ServiceType;
 use App\Models\Zone;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class ServiceCatalogService
 {
@@ -135,11 +134,12 @@ class ServiceCatalogService
     }
 
     /**
-     * العروض لا تحمل إحداثيات خاصة بها، فقط المناطق (zones.latitude/longitude)
-     * ترتبط بها — لذا "المسافة" هنا تقريبية: أقرب منطقة من مناطق العرض المرتبطة
-     * إلى موقع المستخدم (Haversine بالكيلومتر)، لا مسافة دقيقة لموقع العرض نفسه.
-     * تُضاف كعمود select باسم distance_km يُستخدم لاحقًا في applySort()، وإن
-     * أُرسل radius_km أيضًا تُستبعد العروض التي تتجاوزه (أو بلا مناطق بإحداثيات).
+     * المسافة تُحسب أولًا من موقع العرض الدقيق (offers.latitude/longitude —
+     * إلزامي عند إنشاء أي عرض جديد عبر StoreOfferRequest)، وتتراجع فقط عند
+     * غياب ذلك (عروض قديمة سابقة لإلزامية الإحداثيات) إلى أقرب منطقة من
+     * مناطق العرض المرتبطة (zones.latitude/longitude) كتقريب. Haversine
+     * بالكيلومتر. تُضاف كعمود select باسم distance_km يُستخدم لاحقًا في
+     * applySort()، وإن أُرسل radius_km أيضًا تُستبعد العروض التي تتجاوزه.
      */
     private function applyDistanceSelection($query, array $filters): bool
     {
@@ -153,20 +153,29 @@ class ServiceCatalogService
         $lat = (float) $lat;
         $lng = (float) $lng;
 
-        $distanceSubquery = DB::table('offer_zone')
-            ->join('zones', 'zones.id', '=', 'offer_zone.zone_id')
-            ->whereColumn('offer_zone.offer_id', 'offers.id')
-            ->whereNotNull('zones.latitude')
-            ->whereNotNull('zones.longitude')
-            ->selectRaw(
-                'MIN(6371 * ACOS(LEAST(1, GREATEST(-1,
-                    COS(RADIANS(?)) * COS(RADIANS(zones.latitude)) * COS(RADIANS(zones.longitude) - RADIANS(?))
-                    + SIN(RADIANS(?)) * SIN(RADIANS(zones.latitude))
-                ))))',
-                [$lat, $lng, $lat]
-            );
+        $haversine = function (string $latCol, string $lngCol): string {
+            return "6371 * ACOS(LEAST(1, GREATEST(-1,
+                COS(RADIANS(?)) * COS(RADIANS({$latCol})) * COS(RADIANS({$lngCol}) - RADIANS(?))
+                + SIN(RADIANS(?)) * SIN(RADIANS({$latCol}))
+            )))";
+        };
 
-        $query->addSelect(['distance_km' => $distanceSubquery]);
+        $offerDistance = $haversine('offers.latitude', 'offers.longitude');
+        $zoneDistance = $haversine('zones.latitude', 'zones.longitude');
+
+        $distanceSql = "CASE
+            WHEN offers.latitude IS NOT NULL AND offers.longitude IS NOT NULL THEN ({$offerDistance})
+            ELSE (
+                SELECT MIN({$zoneDistance})
+                FROM offer_zone
+                INNER JOIN zones ON zones.id = offer_zone.zone_id
+                WHERE offer_zone.offer_id = offers.id
+                    AND zones.latitude IS NOT NULL
+                    AND zones.longitude IS NOT NULL
+            )
+        END";
+
+        $query->selectRaw("({$distanceSql}) as distance_km", [$lat, $lng, $lat, $lat, $lng, $lat]);
 
         $radiusKm = $filters['radius_km'] ?? null;
         if ($radiusKm !== null) {
