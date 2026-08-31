@@ -44,8 +44,11 @@ class MoyasarWebhookController extends Controller
             'sub'        => $subNumber,
         ]);
 
+        $status = $payment['status'] ?? null;
+
         // نستجيب 200 لكل حدث لا يخصّنا حتى لا يعيد Moyasar إرساله بلا فائدة.
-        if (($payment['status'] ?? null) !== 'paid' || ! $subNumber) {
+        // نتعامل مع paid (تفعيل) و failed (إشعار "لم يتم الدفع") فقط.
+        if (! $subNumber || ! in_array($status, ['paid', 'failed'], true)) {
             return response()->json(['message' => 'ignored'], 200);
         }
 
@@ -56,8 +59,15 @@ class MoyasarWebhookController extends Controller
             return response()->json(['message' => 'subscription not found'], 200);
         }
 
-        $activated = $activation->activateFromPayment($subscription, $payment);
+        if ($status === 'paid') {
+            $activated = $activation->activateFromPayment($subscription, $payment);
+            return response()->json(['message' => $activated ? 'ok' : 'not activated'], 200);
+        }
 
-        return response()->json(['message' => $activated ? 'ok' : 'not activated'], 200);
+        // status === 'failed' — يُطلق ServiceProviderSubscriptionObserver فيرسل
+        // إشعار "لم تكتمل عملية دفع اشتراكك، حاول مرة أخرى" (ما لم يكن paid مسبقًا).
+        $activation->markFailed($subscription, $payment['id'] ?? null);
+
+        return response()->json(['message' => 'marked failed'], 200);
     }
 }

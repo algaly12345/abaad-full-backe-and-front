@@ -77,9 +77,9 @@ class MoyasarPaymentController extends Controller
 
         // لم يُفعَّل: إمّا فشل فعلي، أو دفعة "paid" غير مطابقة (المبلغ/الرقم) —
         // نعلّم failed فقط عندما لا تكون paid، حتى لا نلمس دفعة نجحت فعلاً.
+        // markFailed يُطلق الإشعار "لم تكتمل عملية دفع اشتراكك" عبر الـ Observer.
         if (($payment['status'] ?? null) !== 'paid') {
-            $subscription->payment_status = 'failed';
-            $subscription->save();
+            $this->activation->markFailed($subscription, $payment['id'] ?? null);
         }
 
         return view('payments.result', [

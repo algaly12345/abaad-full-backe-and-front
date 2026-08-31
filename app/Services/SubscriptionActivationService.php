@@ -100,6 +100,31 @@ class SubscriptionActivationService
     }
 
     /**
+     * يُعلّم الاشتراك "فشل الدفع" — يُطلق ServiceProviderSubscriptionObserver
+     * فيُرسل إشعار "لم تكتمل عملية دفع اشتراكك، حاول مرة أخرى" ويُلغي عمولة
+     * الإحالة المعلّقة. idempotent: لا يُعيد الإرسال إن كان failed مسبقًا،
+     * ولا يلمس اشتراكًا مدفوعًا مؤكّدًا.
+     */
+    public function markFailed(ServiceProviderSubscription $subscription, ?string $paymentId = null): void
+    {
+        if (in_array($subscription->payment_status, ['paid', 'failed'], true)) {
+            return;
+        }
+
+        $subscription->payment_status = 'failed';
+        if ($paymentId) {
+            $subscription->moyasar_payment_id = $paymentId;
+        }
+        $subscription->save();
+
+        Log::info('Provider subscription marked failed', [
+            'subscription_id'     => $subscription->id,
+            'subscription_number' => $subscription->subscription_number,
+            'payment_id'          => $paymentId,
+        ]);
+    }
+
+    /**
      * يجلب دفعة واحدة من Moyasar بالمعرّف. يرجع null إذا تعذّر التحقق الآن
      * (مفتاح ناقص أو استجابة غير ناجحة) — لا نعتبرها "فشل دفع".
      *
@@ -131,15 +156,17 @@ class SubscriptionActivationService
 
     /**
      * صفحة واحدة من قائمة دفعات Moyasar (الأحدث أولًا). يستخدمها أمر المطابقة.
+     * null = تعذّر الوصول لـ Moyasar (مفتاح ناقص/استجابة غير ناجحة) — مهم
+     * لتمييزها عن [] (لا دفعات) حتى لا يُعلَّم اشتراك فاشلًا بالخطأ.
      *
-     * @return array<int,array<string,mixed>>
+     * @return array<int,array<string,mixed>>|null
      */
-    public function listRecentPayments(int $page = 1): array
+    public function listRecentPayments(int $page = 1): ?array
     {
         $secret = $this->secretKey();
         if (empty($secret)) {
             Log::error('Moyasar secret key missing — cannot reconcile');
-            return [];
+            return null;
         }
 
         $response = Http::withBasicAuth($secret, '')
@@ -151,7 +178,7 @@ class SubscriptionActivationService
                 'page'   => $page,
                 'status' => $response->status(),
             ]);
-            return [];
+            return null;
         }
 
         return $response->json('payments', []);
