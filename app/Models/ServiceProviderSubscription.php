@@ -23,6 +23,7 @@ class ServiceProviderSubscription extends Model
         'payment_status',
         'price',
         'subscription_number',
+        'moyasar_payment_id',
         'offer_id',
         'number_of_ads',
         'number_of_zone',

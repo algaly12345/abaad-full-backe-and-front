@@ -19,6 +19,12 @@ class Kernel extends ConsoleKernel
 
         // اعتماد عمولات الإحالة المستحقة يوميًا (انظر ReferralCommissionService).
         $schedule->command('referrals:process-commissions')->daily();
+
+        // شبكة أمان الدفع: تفعيل أي اشتراك خُصم ثمنه في Moyasar ولم يؤكَّد
+        // (فات webhook + callback). انظر ReconcileMoyasarPayments.
+        $schedule->command('payments:reconcile-moyasar')
+            ->everyFiveMinutes()
+            ->withoutOverlapping();
     }
 
     /**

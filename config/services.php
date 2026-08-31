@@ -32,8 +32,12 @@ return [
     ],
 
     'moyasar' => [
+        // تُقرأ أساسًا من business_settings؛ هذه القيم خيار احتياط (.env).
         'public_key' => env('MOYASAR_PUBLIC_KEY'),
         'secret_key' => env('MOYASAR_SECRET_KEY'),
+        // secret_token الذي يُضبط عند إنشاء الـ webhook في لوحة Moyasar —
+        // انظر MoyasarWebhookController. الأساس business_settings.moyasar_webhook_secret.
+        'webhook_secret' => env('MOYASAR_WEBHOOK_SECRET'),
     ],
 
     // رابط الإحالة الفعلي (abaadapp.sa/ref/CODE) + assetlinks.json — انظر

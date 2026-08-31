@@ -31,6 +31,18 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Webhooks (خادم-لخادم، بلا auth — المصادقة داخل الحمولة)
+    |--------------------------------------------------------------------------
+    | إشعار Moyasar بنجاح/فشل الدفع، مستقل عن WebView في التطبيق. المصادقة
+    | عبر secret_token في الحمولة == business_settings.moyasar_webhook_secret.
+    | ضمن مجموعة api فلا CSRF ولا جلسة.
+    */
+    Route::post('webhooks/moyasar/provider-subscription', [
+        \App\Http\Controllers\Web\MoyasarWebhookController::class, 'providerSubscription',
+    ])->name('webhooks.moyasar.provider-subscription');
+
+    /*
+    |--------------------------------------------------------------------------
     | Auth
     |--------------------------------------------------------------------------
     */

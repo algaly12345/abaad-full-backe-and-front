@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Web;
 
 use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
-use App\Models\Offer;
 use App\Models\ServiceProviderSubscription;
-use App\Services\ReferralCommissionService;
+use App\Services\SubscriptionActivationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 class MoyasarPaymentController extends Controller
 {
+    public function __construct(private SubscriptionActivationService $activation)
+    {
+    }
+
     /**
      * صفحة إدخال بيانات البطاقة — هذا الرابط هو ما يفتحه WebView في التطبيق.
      * محمي بـ middleware('signed') وليس بتوكن، لأن WebView لا يرسل
@@ -40,8 +41,10 @@ class MoyasarPaymentController extends Controller
 
     /**
      * Moyasar يحوّل المتصفح إلى هذا الرابط تلقائياً بعد إتمام/فشل الدفع.
-     * نتحقق من السيرفر مباشرة (server-to-server) — لا نثق بأي query
-     * param قادم من الرابط نفسه لأنه قابل للتلاعب من جهة العميل.
+     * هذا مجرد "مسار سريع" لتجربة المستخدم — إن فشل (أُغلق المتصفح، انقطاع
+     * الشبكة، تعذّر التحقق الآن) فإن webhook أو أمر payments:reconcile-moyasar
+     * سيفعّل الاشتراك لاحقاً. لا نثق بأي query param من الرابط: نتحقق من
+     * Moyasar مباشرة server-to-server.
      */
     public function callback(Request $request, ServiceProviderSubscription $subscription)
     {
@@ -54,56 +57,30 @@ class MoyasarPaymentController extends Controller
             ]);
         }
 
-        $response = Http::withBasicAuth($this->secretKey(), '')
-            ->get("https://api.moyasar.com/v1/payments/{$paymentId}");
+        $payment = $this->activation->fetchPayment($paymentId);
 
-        if (! $response->ok()) {
-            Log::error('Moyasar verify failed', [
-                'subscription_id' => $subscription->id,
-                'response' => $response->body(),
-            ]);
-
+        // تعذّر التحقق الآن — لا نعتبرها فشلاً: نترك الاشتراك كما هو ليلتقطه
+        // webhook / أمر المطابقة.
+        if ($payment === null) {
             return view('payments.result', [
                 'success' => false,
-                'message' => 'تعذر التحقق من حالة الدفع، حاول مرة أخرى',
+                'message' => 'تعذر تأكيد الدفع الآن، سيتم تحديث اشتراكك تلقائياً خلال دقائق إن تم الخصم',
             ]);
         }
 
-        $payment = $response->json();
-
-        $matchedSubscriptionNumber = $payment['metadata']['subscription_number'] ?? null;
-        $isCorrectSubscription = $matchedSubscriptionNumber === $subscription->subscription_number;
-        $isPaid = ($payment['status'] ?? null) === 'paid';
-        $amountMatches = (int) ($payment['amount'] ?? 0) === (int) round($subscription->price * 100);
-
-        if ($isPaid && $isCorrectSubscription && $amountMatches) {
-            $subscription->payment_status = 'paid';
-            $subscription->subscription_status = 'active';
-            $subscription->save();
-
-            // الحساب أصبح مزوّد خدمة فعلياً منذ إرسال بيانات "إضافة خدمة" —
-            // راجع ServiceProviderService::createOfferAndSubscription — فلا
-            // حاجة لأي تحويل هنا، فقط تفعيل العرض نفسه بعد تأكّد الدفع.
-            if ($subscription->offer_id) {
-                // fetch+save بدل mass update عبر query builder، حتى يمر التغيير عبر
-                // save() ويُطلق OfferObserver (mass update لا يُطلق أحداث Eloquent إطلاقًا).
-                $offer = Offer::find($subscription->offer_id);
-                if ($offer) {
-                    $offer->status = 'accept';
-                    $offer->save();
-                }
-            }
-
-            (new ReferralCommissionService())->createCommissionForPaidSubscription($subscription);
-
+        if ($this->activation->activateFromPayment($subscription, $payment)) {
             return view('payments.result', [
                 'success' => true,
                 'message' => 'تم الدفع بنجاح، تم تفعيل اشتراكك',
             ]);
         }
 
-        $subscription->payment_status = 'failed';
-        $subscription->save();
+        // لم يُفعَّل: إمّا فشل فعلي، أو دفعة "paid" غير مطابقة (المبلغ/الرقم) —
+        // نعلّم failed فقط عندما لا تكون paid، حتى لا نلمس دفعة نجحت فعلاً.
+        if (($payment['status'] ?? null) !== 'paid') {
+            $subscription->payment_status = 'failed';
+            $subscription->save();
+        }
 
         return view('payments.result', [
             'success' => false,
@@ -112,19 +89,15 @@ class MoyasarPaymentController extends Controller
     }
 
     /**
-     * المفتاح السري يُقرأ حصراً من business_settings — لا يوجد سقوط احتياطي
-     * على .env، حتى لا تُستخدم قيمة .env القديمة/الوهمية بالخطأ.
-     */
-    private function secretKey(): ?string
-    {
-        return Helpers::get_business_settings('moyasar_secret_key');
-    }
-
-    /**
-     * نفس منطق secretKey() — قراءة حصراً من business_settings.
+     * المفتاح العام يُقرأ من business_settings، ثم يسقط على .env كخيار احتياط.
      */
     private function publicKey(): ?string
     {
-        return Helpers::get_business_settings('moyasar_public_key');
+        $fromSettings = Helpers::get_business_settings('moyasar_public_key');
+        if (! empty($fromSettings)) {
+            return $fromSettings;
+        }
+
+        return config('services.moyasar.public_key') ?: null;
     }
 }
