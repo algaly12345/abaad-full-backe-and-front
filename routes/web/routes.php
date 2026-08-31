@@ -107,8 +107,12 @@ Route::get('payment/provider-subscription/{subscription}', [MoyasarPaymentContro
     ->middleware('signed')
     ->name('payment.provider-subscription.show');
 
+// لا نستخدم 'signed' هنا: Moyasar يُلحق كائن الدفع كاملاً بالرابط عند
+// التحويل بعد 3-D Secure (مدى دائمًا)، ففحص Laravel للتوقيع على سلسلة
+// الاستعلام كاملةً كان يفشل بـ 403 "Invalid signature". هذا الـ middleware
+// يتحقق من expires + signature فقط ويتجاهل ما ألحقه Moyasar.
 Route::get('payment/provider-subscription/{subscription}/callback', [MoyasarPaymentController::class, 'callback'])
-    ->middleware('signed')
+    ->middleware(\App\Http\Middleware\ValidateMoyasarCallbackSignature::class)
     ->name('payment.provider-subscription.callback');
 
 
