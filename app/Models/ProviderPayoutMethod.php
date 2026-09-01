@@ -4,25 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CommissionWithdrawalRequest extends Model
+class ProviderPayoutMethod extends Model
 {
     protected $fillable = [
         'user_id',
-        'amount',
-        'status',
         'account_holder_name',
         'iban',
         'bank_name',
         'national_id',
-        'requested_at',
-        'processed_at',
-        'note',
-    ];
-
-    protected $casts = [
-        'amount' => 'float',
-        'requested_at' => 'datetime',
-        'processed_at' => 'datetime',
     ];
 
     public function user()

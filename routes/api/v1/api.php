@@ -212,6 +212,8 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('my-link', [ReferralController::class, 'myLink']);
         Route::get('/', [ReferralController::class, 'index']);
         Route::get('summary', [ReferralController::class, 'summary']);
+        Route::get('payout-method', [ReferralController::class, 'payoutMethod']);
+        Route::post('payout-method', [ReferralController::class, 'savePayoutMethod']);
         Route::post('withdrawals', [ReferralController::class, 'requestWithdrawal']);
         Route::get('withdrawals', [ReferralController::class, 'withdrawals']);
     });

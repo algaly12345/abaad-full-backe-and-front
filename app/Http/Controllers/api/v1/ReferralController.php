@@ -6,6 +6,7 @@ use App\Helpers\Helpers;
 use App\Http\Controllers\Controller;
 use App\Models\Commission;
 use App\Models\CommissionWithdrawalRequest;
+use App\Models\ProviderPayoutMethod;
 use App\Models\Referral;
 use App\Models\ReferralSetting;
 use App\Models\User;
@@ -114,9 +115,13 @@ class ReferralController extends Controller
      */
     public function requestWithdrawal(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:0.01',
-        ]);
+        $this->normalizePayoutInput($request);
+
+        $validator = Validator::make(
+            $request->all(),
+            array_merge(['amount' => 'required|numeric|min:0.01'], $this->payoutRules()),
+            $this->payoutMessages()
+        );
 
         if ($validator->fails()) {
             return response()->json(['errors' => Helpers::error_processor($validator)], 403);
@@ -132,23 +137,36 @@ class ReferralController extends Controller
             ], 403);
         }
 
+        $payout = [
+            'account_holder_name' => trim($request->account_holder_name),
+            'iban' => $request->iban,
+            'bank_name' => trim($request->bank_name),
+            'national_id' => $request->national_id,
+        ];
+
         // معاملة + قفل صفوف العمولات المتاحة لهذا المستخدم: بدونها، طلبا سحب
         // متزامنان (ضغط مزدوج على الزر، أو محاولة متعمّدة) قد يقرآن نفس
         // الرصيد المتاح قبل أن يكتب أي منهما، فيسمحان معًا بسحب أكبر من
         // الرصيد الفعلي (double-spend).
-        $result = DB::transaction(function () use ($user, $amount) {
+        $result = DB::transaction(function () use ($user, $amount, $payout) {
             $available = $this->lockedAvailableCommissionBalance($user->id);
 
             if ($amount > $available) {
                 return ['error' => true];
             }
 
-            $withdrawal = CommissionWithdrawalRequest::create([
+            // "يُحفظ مرّة": أحدث حساب إيداع يبقى مخزّنًا على مستوى المستخدم
+            // لتعبئة ورقة السحب تلقائيًا في المرة القادمة.
+            ProviderPayoutMethod::updateOrCreate(['user_id' => $user->id], $payout);
+
+            // "نسخة مع كل طلب": تُثبَّت القيم داخل صف الطلب حتى لا تتأثر بأي
+            // تعديل لاحق على حساب الإيداع — تبقى لدى الإدارة كما كانت وقت الطلب.
+            $withdrawal = CommissionWithdrawalRequest::create(array_merge([
                 'user_id' => $user->id,
                 'amount' => $amount,
                 'status' => 'pending',
                 'requested_at' => now(),
-            ]);
+            ], $payout));
 
             $lastBalance = (float) (WalletTransaction::where('user_id', $user->id)->latest('id')->value('balance') ?? 0);
             WalletTransaction::create([
@@ -174,6 +192,84 @@ class ReferralController extends Controller
         }
 
         return response()->json(['data' => $result['withdrawal']], 201);
+    }
+
+    /**
+     * حساب الإيداع المحفوظ لمزوّد الخدمة الحالي — لتعبئة ورقة السحب مسبقًا.
+     * يُرجع data = null إن لم يحفظ المزوّد حسابًا بعد.
+     */
+    public function payoutMethod(Request $request)
+    {
+        return response()->json([
+            'data' => ProviderPayoutMethod::where('user_id', $request->user()->id)->first(),
+        ], 200);
+    }
+
+    /**
+     * حفظ/تحديث حساب الإيداع دون تقديم طلب سحب.
+     */
+    public function savePayoutMethod(Request $request)
+    {
+        $this->normalizePayoutInput($request);
+
+        $validator = Validator::make($request->all(), $this->payoutRules(), $this->payoutMessages());
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+
+        $method = ProviderPayoutMethod::updateOrCreate(
+            ['user_id' => $request->user()->id],
+            [
+                'account_holder_name' => trim($request->account_holder_name),
+                'iban' => $request->iban,
+                'bank_name' => trim($request->bank_name),
+                'national_id' => $request->national_id,
+            ]
+        );
+
+        return response()->json(['data' => $method], 200);
+    }
+
+    /**
+     * توحيد صيغة الآيبان (بلا فراغات، أحرف كبيرة) ورقم الهوية (أرقام فقط)
+     * قبل التحقق والتخزين.
+     */
+    private function normalizePayoutInput(Request $request): void
+    {
+        $request->merge([
+            'iban' => strtoupper(str_replace(' ', '', (string) $request->input('iban'))),
+            'national_id' => preg_replace('/\D/', '', (string) $request->input('national_id')),
+        ]);
+    }
+
+    /**
+     * قواعد بيانات حساب الإيداع: آيبان سعودي (SA + 22 رقمًا)، رقم هوية/إقامة
+     * من 10 أرقام.
+     */
+    private function payoutRules(): array
+    {
+        return [
+            'account_holder_name' => 'required|string|max:255',
+            'iban' => ['required', 'string', 'regex:/^SA\d{22}$/'],
+            'bank_name' => 'required|string|max:255',
+            'national_id' => ['required', 'string', 'regex:/^\d{10}$/'],
+        ];
+    }
+
+    private function payoutMessages(): array
+    {
+        return [
+            'amount.required' => 'الرجاء إدخال مبلغ صحيح',
+            'amount.numeric' => 'الرجاء إدخال مبلغ صحيح',
+            'amount.min' => 'الرجاء إدخال مبلغ صحيح',
+            'account_holder_name.required' => 'الرجاء إدخال اسم صاحب الحساب',
+            'iban.required' => 'الرجاء إدخال رقم الآيبان',
+            'iban.regex' => 'رقم الآيبان غير صحيح (يبدأ بـ SA ويليه 22 رقمًا)',
+            'bank_name.required' => 'الرجاء إدخال اسم البنك',
+            'national_id.required' => 'الرجاء إدخال رقم الهوية',
+            'national_id.regex' => 'رقم الهوية يجب أن يكون 10 أرقام',
+        ];
     }
 
     public function withdrawals(Request $request)
