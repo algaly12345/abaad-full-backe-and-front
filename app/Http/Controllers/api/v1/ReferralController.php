@@ -106,6 +106,9 @@ class ReferralController extends Controller
             'available_total' => (float) ($totals['AVAILABLE']->total ?? 0),
             'withdrawn_total' => (float) ($totals['WITHDRAWN']->total ?? 0),
             'available_balance' => $availableBalance,
+            // الحد الأدنى للسحب المضبوط من لوحة الإدارة — يعتمد عليه تطبيق الجوال
+            // لتفعيل زرّ الطلب وعرض شريط التقدّم نحو الحد. 0 = بلا حد أدنى.
+            'min_payout_limit' => (float) ReferralSetting::current()->min_payout_limit,
         ], 200);
     }
 
