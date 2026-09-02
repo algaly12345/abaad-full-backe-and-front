@@ -99,6 +99,28 @@ class ReferralController extends Controller
 
         $availableBalance = $this->availableCommissionBalance($userId);
 
+        // إجماليات طلبات السحب حسب الحالة — نفصلها إلى "قيد المراجعة" (لم تُعتمد
+        // بعد) و"تم تحويلها" (اعتُمدت أو دُفعت). المرفوضة لا تُحجَز، فمبلغها يعود
+        // ضمن available_balance تلقائيًا.
+        $withdrawalTotals = CommissionWithdrawalRequest::where('user_id', $userId)
+            ->selectRaw('status, SUM(amount) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $withdrawalUnderReview = (float) ($withdrawalTotals['pending'] ?? 0);
+        $withdrawalTransferred = (float) (($withdrawalTotals['approved'] ?? 0) + ($withdrawalTotals['paid'] ?? 0));
+
+        // إجمالي ما استحقه المستخدم فعليًا من عمولات (بلا الملغاة). مبني ليطابق
+        // بالضبط: قيد الحجز + قيد المراجعة + تم تحويلها + المتاح للسحب، حتى
+        // تتصالح كل الأرقام المعروضة في تطبيق الجوال. (APPROVED حالة عبور لحظية
+        // وWITHDRAWN غير مستخدمة حاليًا، فعمليًا = PENDING + AVAILABLE.)
+        $lifetimeEarned = (float) (
+            ($totals['PENDING']->total ?? 0)
+            + ($totals['APPROVED']->total ?? 0)
+            + ($totals['AVAILABLE']->total ?? 0)
+            + ($totals['WITHDRAWN']->total ?? 0)
+        );
+
         return response()->json([
             'referred_count' => Referral::where('referrer_id', $userId)->count(),
             'pending_total' => (float) ($totals['PENDING']->total ?? 0),
@@ -106,6 +128,12 @@ class ReferralController extends Controller
             'available_total' => (float) ($totals['AVAILABLE']->total ?? 0),
             'withdrawn_total' => (float) ($totals['WITHDRAWN']->total ?? 0),
             'available_balance' => $availableBalance,
+            // ── تفصيل يجعل دورة حياة العمولة كاملة قابلة للمصالحة في الواجهة ──
+            // lifetime_earned = pending_total + withdrawal_under_review_total
+            //                 + withdrawal_transferred_total + available_balance
+            'lifetime_earned' => round($lifetimeEarned, 2),
+            'withdrawal_under_review_total' => round($withdrawalUnderReview, 2),
+            'withdrawal_transferred_total' => round($withdrawalTransferred, 2),
             // الحد الأدنى للسحب المضبوط من لوحة الإدارة — يعتمد عليه تطبيق الجوال
             // لتفعيل زرّ الطلب وعرض شريط التقدّم نحو الحد. 0 = بلا حد أدنى.
             'min_payout_limit' => (float) ReferralSetting::current()->min_payout_limit,

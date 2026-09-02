@@ -28,6 +28,8 @@ class ServiceProviderSubscription extends Model
         'number_of_ads',
         'number_of_zone',
         'number_of_categories',
+        'vat_percent',
+        'vat_amount',
     ];
 
     public function provider()

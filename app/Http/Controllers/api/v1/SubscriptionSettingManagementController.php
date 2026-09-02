@@ -41,6 +41,7 @@ class SubscriptionSettingManagementController extends Controller
             'included_categories' => 'required|integer|min:0',
             'extra_zone_price' => 'required|numeric|min:0',
             'extra_category_price' => 'required|numeric|min:0',
+            'vat_percent' => 'sometimes|numeric|min:0|max:100',
         ]);
 
         $settings = SubscriptionPricingSetting::current();

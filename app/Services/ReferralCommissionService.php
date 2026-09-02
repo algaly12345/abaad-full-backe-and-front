@@ -56,10 +56,10 @@ class ReferralCommissionService
                 return;
             }
 
-            // لا توجد ضريبة مضافة أو خصم منفصلين على سعر الاشتراك في الكود الحالي
-            // (ServiceProviderService::calculatePrice) — subscription->price هو
-            // المبلغ الفعلي المدفوع فعليًا لبوابة Moyasar بدون أي تعديل إضافي.
-            $paidAmount = (float) $subscription->price;
+            // العمولة تُحتسب على صافي قيمة الاشتراك قبل ضريبة القيمة المضافة —
+            // لا عمولة على الضريبة المُورَّدة للدولة. price أصبح شاملاً الضريبة
+            // (هو المبلغ المدفوع فعليًا لبوابة Moyasar)، فنطرح vat_amount منه.
+            $paidAmount = (float) $subscription->price - (float) $subscription->vat_amount;
             $commissionAmount = $settings->calculateCommission($paidAmount);
 
             Commission::create([

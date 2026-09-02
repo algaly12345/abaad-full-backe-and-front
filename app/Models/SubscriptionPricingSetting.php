@@ -18,6 +18,7 @@ class SubscriptionPricingSetting extends Model
         'included_categories',
         'extra_zone_price',
         'extra_category_price',
+        'vat_percent',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class SubscriptionPricingSetting extends Model
         'included_categories' => 'integer',
         'extra_zone_price' => 'float',
         'extra_category_price' => 'float',
+        'vat_percent' => 'float',
     ];
 
     const CACHE_KEY = 'subscription_pricing_setting';
@@ -43,6 +45,7 @@ class SubscriptionPricingSetting extends Model
                 'included_categories' => 1,
                 'extra_zone_price' => 49,
                 'extra_category_price' => 49,
+                'vat_percent' => 15,
             ]);
         });
     }

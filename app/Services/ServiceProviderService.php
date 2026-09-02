@@ -37,7 +37,9 @@ class ServiceProviderService
      * السعر الشهري = الأساسي + (المناطق الزائدة عن الحد المشمول × سعر المنطقة الإضافية)
      *                        + (الأنواع الزائدة عن الحد المشمول × سعر النوع الإضافي)
      * الإجمالي قبل الخصم = السعر الشهري × المدة (بالأشهر)
-     * الإجمالي النهائي = الإجمالي قبل الخصم − (نسبة الخصم حسب المدة × الإجمالي قبل الخصم)
+     * الإجمالي قبل الضريبة = الإجمالي قبل الخصم − (نسبة الخصم حسب المدة × الإجمالي قبل الخصم)
+     * الإجمالي النهائي = الإجمالي قبل الضريبة + (نسبة ضريبة القيمة المضافة × الإجمالي قبل الضريبة)
+     * ملاحظة: total_price شامل ضريبة القيمة المضافة — هو المبلغ الذي يُدفَع فعليًا.
      */
     public function calculatePrice(int $duration, int $zonesCount, int $categoriesCount): array
     {
@@ -54,7 +56,13 @@ class ServiceProviderService
 
         $discountPercent = SubscriptionDurationDiscount::percentFor($duration);
         $discountAmount = $subtotal * $discountPercent / 100;
-        $total = $subtotal - $discountAmount;
+        $totalBeforeVat = $subtotal - $discountAmount;
+
+        // ضريبة القيمة المضافة تُضاف فوق الإجمالي بعد الخصم. النسبة تأتي من
+        // إعدادات التسعير (قابلة للتعديل)، وتسقط على 15 إن غاب العمود.
+        $vatPercent = (float) ($settings->vat_percent ?? 15);
+        $vatAmount = $totalBeforeVat * $vatPercent / 100;
+        $total = $totalBeforeVat + $vatAmount;
 
         return [
             'base_price' => round($settings->base_price, 2),
@@ -67,6 +75,9 @@ class ServiceProviderService
             'subtotal_before_discount' => round($subtotal, 2),
             'discount_percent' => $discountPercent,
             'discount_amount' => round($discountAmount, 2),
+            'total_before_vat' => round($totalBeforeVat, 2),
+            'vat_percent' => round($vatPercent, 2),
+            'vat_amount' => round($vatAmount, 2),
             'total_price' => round($total, 2),
         ];
     }
@@ -205,6 +216,8 @@ class ServiceProviderService
                 'monthly_total' => $pricing['monthly_total'],
                 'discount_percent' => $pricing['discount_percent'],
                 'discount_amount' => $pricing['discount_amount'],
+                'vat_percent' => $pricing['vat_percent'],
+                'vat_amount' => $pricing['vat_amount'],
             ]);
 
             // رابط دفع موقّع رقمياً وصالح لمدة ساعتين فقط — هذا الرابط
@@ -230,6 +243,9 @@ class ServiceProviderService
                 'subtotal_before_discount' => $pricing['subtotal_before_discount'],
                 'discount_percent' => $pricing['discount_percent'],
                 'discount_amount' => $pricing['discount_amount'],
+                'total_before_vat' => $pricing['total_before_vat'],
+                'vat_percent' => $pricing['vat_percent'],
+                'vat_amount' => $pricing['vat_amount'],
                 'amount_to_pay' => $pricing['total_price'],
                 'currency' => 'SAR',
                 'payment_url' => $paymentUrl,

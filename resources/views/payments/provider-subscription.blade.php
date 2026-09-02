@@ -181,6 +181,12 @@
                     <span class="amount-currency">ريال</span>
                 </div>
                 <div class="sub-line">اشتراك رقم {{ $subscription->subscription_number }}</div>
+                @if($subscription->vat_amount)
+                    <div class="sub-line">
+                        شامل ضريبة القيمة المضافة ({{ rtrim(rtrim(number_format($subscription->vat_percent, 2, '.', ''), '0'), '.') }}%):
+                        {{ number_format($subscription->vat_amount, 2) }} ريال
+                    </div>
+                @endif
             </div>
 
             <div class="form-wrap">
