@@ -37,8 +37,20 @@ class ProviderPushNotifier
             return;
         }
 
-        $fcmToken = $user->cm_firebase_token;
-        $userId = $user->id;
+        self::notifyToken($user->cm_firebase_token, $type, $title, $description, $refId, $user->id);
+    }
+
+    /**
+     * نفس منطق notify() لكن مع توكن FCM خام بدل موديل User — يُستخدم للجهات
+     * التي لا تُمثَّل بسجل User في هذا الريبو (مثل جهاز أدمن مراجعة الإعلانات
+     * على dashboard.abaadapp.sa). التوكن الفارغ يُتجاهل بصمت.
+     */
+    public static function notifyToken(?string $fcmToken, string $type, string $title, string $description, $refId = null, $userId = null): void
+    {
+        if (empty($fcmToken)) {
+            return;
+        }
+
         $orderId = $refId ?? '';
 
         DB::afterCommit(function () use ($fcmToken, $userId, $type, $title, $description, $orderId) {

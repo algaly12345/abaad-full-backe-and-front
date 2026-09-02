@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Offer;
+use App\Models\User;
 use App\Services\ProviderPushNotifier;
 use App\Services\ServiceCatalogService;
 
@@ -21,6 +22,7 @@ class OfferObserver
     public function created(Offer $offer): void
     {
         ServiceCatalogService::flushCache();
+        $this->notifyAdminNewService($offer);
     }
 
     public function updated(Offer $offer): void
@@ -32,6 +34,44 @@ class OfferObserver
     public function deleted(Offer $offer): void
     {
         ServiceCatalogService::flushCache();
+    }
+
+    /**
+     * معرّف حساب أدمن مراجعة الخدمات في جدول users (الجوال +966 50 373 1637).
+     * توكن FCM يُقرأ لحظيًا من users.cm_firebase_token لهذا الصف، فيبقى محدَّثًا
+     * تلقائيًا كلما سجّل الأدمن الدخول من التطبيق (update_cm_firebase_token) —
+     * لا تخزين توكن يدوي في .env أو business_settings.
+     */
+    private const REVIEW_ADMIN_USER_ID = 251;
+
+    /**
+     * إشعار "push" لأدمن مراجعة الخدمات عبر خدمة الإشعارات على
+     * dashboard.abaadapp.sa عند كل إضافة خدمة جديدة من مزوّد خدمة، ليدخل
+     * ويطّلع عليها في اللوحة. يمرّ عبر ProviderPushNotifier::notifyToken:
+     * يُؤجَّل فعليًا إلى ما بعد commit (مهم لمسار store-offer الملفوف في
+     * DB::transaction) ولا يرمي استثناء أبدًا — توكن فاسد/منتهٍ أو فشل شبكة
+     * يجب ألا يكسر إنشاء الخدمة.
+     *
+     * لو الحساب غير موجود أو ما عنده توكن حقيقي بعد (القيمة القديمة "@" أو
+     * فارغة) نتجاهل بصمت — يبدأ الإرسال تلقائيًا أول ما يسجّل الأدمن الدخول.
+     */
+    private function notifyAdminNewService(Offer $offer): void
+    {
+        $adminToken = optional(User::find(self::REVIEW_ADMIN_USER_ID))->cm_firebase_token;
+
+        if (!is_string($adminToken) || strlen($adminToken) < 30) {
+            return;
+        }
+
+        $label = $offer->title ?: ('#' . $offer->id);
+
+        ProviderPushNotifier::notifyToken(
+            $adminToken,
+            'service_review',
+            'خدمة جديدة بانتظار المراجعة',
+            'أضاف أحد مزوّدي الخدمة خدمة جديدة: "' . $label . '". يمكنك مراجعتها الآن من لوحة التحكم.',
+            $offer->id
+        );
     }
 
     /**
