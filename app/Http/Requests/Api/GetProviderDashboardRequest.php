@@ -16,9 +16,10 @@ class GetProviderDashboardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'period' => 'nullable|string|in:today,week,month,all,custom',
-            'from'   => 'nullable|date|required_if:period,custom',
-            'to'     => 'nullable|date|required_if:period,custom|after_or_equal:from',
+            'period'      => 'nullable|string|in:today,week,month,all,custom',
+            'from'        => 'nullable|date|required_if:period,custom',
+            'to'          => 'nullable|date|required_if:period,custom|after_or_equal:from',
+            'granularity' => 'nullable|string|in:day,month',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\GetServicesRequest;
 use App\Http\Resources\ServiceOfferResource;
 use App\Models\Offer;
+use App\Services\OfferViewRecorder;
 use App\Services\ServiceCatalogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,8 @@ class ServiceCatalogController extends Controller
     private const AUTH_GUARD = 'api';
 
     public function __construct(
-        private readonly ServiceCatalogService $serviceCatalogService
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly OfferViewRecorder $offerViewRecorder,
     ) {
     }
 
@@ -53,7 +55,7 @@ class ServiceCatalogController extends Controller
         return $this->paginatedResponse($services);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
         $service = $this->serviceCatalogService->find($id);
 
@@ -63,6 +65,10 @@ class ServiceCatalogController extends Controller
                 'message' => 'الخدمة غير موجودة أو غير متاحة',
             ], 404);
         }
+
+        // تسجيل مشاهدة العرض (مُزال منها التكرار اليومي، وتتخطّى المالك وعروض
+        // الإدارة) — تغذّي إحصائيات مزوّد الخدمة. أي فشل يُبتلع داخليًا.
+        $this->offerViewRecorder->record($service, $request->user(self::AUTH_GUARD), $request);
 
         return response()->json([
             'status' => 'success',

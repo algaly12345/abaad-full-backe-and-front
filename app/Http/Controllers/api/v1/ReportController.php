@@ -38,22 +38,40 @@ class ReportController extends Controller
         $providerId = $request->user(self::AUTH_GUARD)->id;
         $data = $request->validated();
         $periodKey = $data['period'] ?? 'all';
+        $granularity = $data['granularity'] ?? 'day';
         [$from, $to] = $this->resolvePeriodRange($periodKey, $data['from'] ?? null, $data['to'] ?? null);
+
+        $svc = $this->providerReportService;
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'summary' => $this->providerReportService->summary($providerId),
-                'views_by_zone' => $this->providerReportService->viewsByZone($providerId),
-                'views_by_category' => $this->providerReportService->viewsByCategory($providerId),
-                'subscriptions' => $this->providerReportService->subscriptionsOverview($providerId),
                 'period' => [
                     'key' => $periodKey,
                     'from' => $from?->toDateString(),
                     'to' => $to?->toDateString(),
+                    'granularity' => $granularity,
                 ],
-                'period_summary' => $this->providerReportService->periodSummary($providerId, $from, $to),
-                'period_subscriptions' => $this->providerReportService->periodSubscriptions($providerId, $from, $to),
+                // نظرة عامة: مؤشرات الحالة الآنية الكاملة (لا تتأثر بفلتر الفترة).
+                'summary' => $svc->summary($providerId),
+                // بطاقة الحساب/التوثيق.
+                'account' => $svc->accountProfile($providerId),
+                // الأداء والمشاهدات الفعلية (كل الوقت للترتيب حسب المنطقة/التصنيف،
+                // والسلسلة الزمنية بالدقة المطلوبة).
+                'performance' => $svc->performance($providerId, null, null, $granularity),
+                // المالية: إنفاق تراكمي/مستحقات/أقرب تجديد/إنفاق حسب الباقة والشهر.
+                'finance' => $svc->financialSummary($providerId),
+                // كل الاشتراكات مُثراة، الأحدث أولًا.
+                'subscriptions' => $svc->subscriptionsOverview($providerId),
+                // التغطية (مناطق/تصنيفات/أنواع خدمة) مقابل مخصّصات الاشتراكات النشطة.
+                'coverage' => $svc->coverageVsPlan($providerId),
+                // مفاتيح متوافقة مع الإصدار السابق من التطبيق (نفس شكل القوائم).
+                'views_by_zone' => $svc->viewsByZone($providerId),
+                'views_by_category' => $svc->viewsByCategory($providerId),
+                // خلال الفترة المحددة (created_at) + مشاهدات مقيّدة بالفترة.
+                'period_summary' => $svc->periodSummary($providerId, $from, $to),
+                'period_subscriptions' => $svc->periodSubscriptions($providerId, $from, $to),
+                'period_views' => $svc->periodViews($providerId, $from, $to, $granularity),
             ],
         ], 200);
     }
