@@ -2,6 +2,10 @@
 
 @section('title', translate('map'))
 
+@php
+    $r2Base = rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/');
+@endphp
+
 @section('content')
 <style>
     :root{
@@ -464,7 +468,7 @@ $(function () {
 
         items.forEach((estate) => {
             const imageUrl = estate.images && estate.images.length
-                ? `{{ asset('storage/app/public/estate') }}/${estate.images[0]}`
+                ? `{{ $r2Base }}/estate/${estate.images[0]}`
                 : `{{ asset('public/assets/images/default-estate.jpg') }}`;
 
             const hasOffer = estate.service_offers && estate.service_offers.length > 0;
@@ -641,7 +645,7 @@ $(function () {
 
     function createEstateMarker(estate){
         const imageUrl = estate.images && estate.images.length
-            ? `{{ asset('storage/app/public/estate') }}/${estate.images[0]}`
+            ? `{{ $r2Base }}/estate/${estate.images[0]}`
             : `{{ asset('public/assets/images/default-estate.jpg') }}`;
 
         const shortPrice = estate.category_name === 'ارض'
@@ -720,7 +724,7 @@ $(function () {
 
     function buildInfoWindow(estate){
         const imageUrl = estate.images && estate.images.length
-            ? `{{ asset('storage/app/public/estate') }}/${estate.images[0]}`
+            ? `{{ $r2Base }}/estate/${estate.images[0]}`
             : `{{ asset('public/assets/images/default-estate.jpg') }}`;
 
         return `
@@ -775,7 +779,7 @@ $(function () {
                 <div class="col-12">
                     <div style="border:1px solid #e5e7eb;border-radius:18px;padding:14px;background:#fff;">
                         <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
-                            <img src="{{ asset('storage/app/public') }}/${offer.image}" 
+                            <img src="{{ $r2Base }}/${offer.image}" 
                                  style="width:110px;height:110px;object-fit:cover;border-radius:14px;"
                                  alt="${offer.title}">
                             <div style="flex:1;min-width:220px;">
