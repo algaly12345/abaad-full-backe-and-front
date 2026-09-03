@@ -2,12 +2,8 @@
 
 @section('title', (request('filter') && request('filter') == 'top-vendors' ? translate('top_Stores') : "كل العقارات"))
 @php
- $r2Base = isset($web_config['r2_public_url'])
-        ? rtrim($web_config['r2_public_url'], '/')
-        : '';
+ $r2Base = rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/');
 @endphp
-@push('css_or_js')
-<style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
     :root{
