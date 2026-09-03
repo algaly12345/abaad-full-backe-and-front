@@ -2,9 +2,7 @@
 
 @section('title', (request('filter') && request('filter') == 'top-vendors' ? translate('top_Stores') : "كل العقارات"))
 @php
-   $r2Base = isset($web_config['r2_public_url'])
-    ? rtrim($web_config['r2_public_url'], '/')
-    : '';
+   $r2Base = rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/');
 @endphp
 @push('css_or_js')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
