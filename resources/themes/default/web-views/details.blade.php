@@ -2,6 +2,10 @@
 
 @section('title', $estate['title'])
 
+@php
+    $r2Base = rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/');
+@endphp
+
 @push('css_or_js')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -928,7 +932,7 @@ body {
     $estateDistrict    = $estate['districts'] ?? '';
     $estateDescription = "{$estateType} - {$estateCategory} في {$estateCity}" . ($estateDistrict ? "، حي {$estateDistrict}" : '');
     $estateImage       = isset($estate['images'][0])
-        ? asset('storage/app/public/estate/'.$estate['images'][0])
+        ? $r2Base.'/estate/'.$estate['images'][0]
         : asset('public/assets/images/logo_web.png');
 @endphp
 <meta property="og:type"        content="website" />
@@ -1047,7 +1051,7 @@ body {
                                         <span id="imageCurrentIndex">1</span> / {{ count($estateImages) }}
                                     </div>
                                     <img id="mainGalleryImage"
-                                         src="{{ asset('storage/app/public/estate/'.$estateImages[0]) }}"
+                                         src="{{ $r2Base.'/estate/'.$estateImages[0] }}"
                                          alt="{{ $estate['title'] }}"
                                          onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
                                     <div class="preview-overlay">
@@ -1060,8 +1064,8 @@ body {
                                     @foreach($estateImages as $index => $photo)
                                         <button class="rail-item {{ $index === 0 ? 'active' : '' }}"
                                                 data-index="{{ $index }}"
-                                                data-src="{{ asset('storage/app/public/estate/'.$photo) }}">
-                                            <img src="{{ asset('storage/app/public/estate/'.$photo) }}"
+                                                data-src="{{ $r2Base.'/estate/'.$photo }}">
+                                            <img src="{{ $r2Base.'/estate/'.$photo }}"
                                                  onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
                                             <span class="rail-badge">{{ $index + 1 }}</span>
                                         </button>
@@ -1140,7 +1144,7 @@ body {
                             <div class="gallery-stage">
                                 <div class="main-preview" id="mainPlanPreview">
                                     <img id="mainPlanImage"
-                                         src="{{ asset('storage/app/public/estate/'.$planned[0]) }}"
+                                         src="{{ $r2Base.'/estate/'.$planned[0] }}"
                                          onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
                                     <div class="preview-overlay">
                                         <div class="title">المخطط الرئيسي</div>
@@ -1150,8 +1154,8 @@ body {
                                     @foreach($planned as $index => $plan)
                                         <button class="rail-item {{ $index === 0 ? 'active' : '' }}"
                                                 data-plan-index="{{ $index }}"
-                                                data-src="{{ asset('storage/app/public/estate/'.$plan) }}">
-                                            <img src="{{ asset('storage/app/public/estate/'.$plan) }}"
+                                                data-src="{{ $r2Base.'/estate/'.$plan }}">
+                                            <img src="{{ $r2Base.'/estate/'.$plan }}"
                                                  onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'">
                                             <span class="rail-badge">{{ $index + 1 }}</span>
                                         </button>
@@ -1564,7 +1568,7 @@ body {
             <div class="seller-cover"></div>
             <div class="seller-body text-center">
                 <img class="seller-avatar"
-                     src="{{ $estate['users']->image ? asset('storage/app/public/profile/' . $estate['users']->image) : asset('storage/app/public/profile/default_avatar.png') }}"
+                     src="{{ $estate['users']->image ? $r2Base.'/'.$estate['users']->image : asset('storage/app/public/profile/default_avatar.png') }}"
                      onerror="this.src='{{ asset('storage/app/public/profile/default_avatar.png') }}'">
 
                 <div class="seller-name">{{ $estate['users']->name ?? '-' }}</div>
@@ -1680,7 +1684,7 @@ body {
                         @endif
                     </div>
                     <div class="offer-inner">
-                        <img class="offer-thumb" src="{{ asset('storage/app/public/'.$offer['image']) }}" alt="{{ $offer['title'] }}">
+                        <img class="offer-thumb" src="{{ $r2Base.'/'.$offer['image'] }}" alt="{{ $offer['title'] }}">
                         <div>
                             <div class="offer-name">{{ $offer['title'] }}</div>
                             <div class="offer-price">{{ $offer['service_price'] }} SAR</div>
@@ -1980,7 +1984,7 @@ function openMediaGallery(type) {
         } else {
             html = '<div class="fullscreen-gallery">';
             estateImages.forEach(img => {
-                html += `<img src="{{ asset('storage/app/public/estate') }}/${img}"
+                html += `<img src="{{ $r2Base }}/estate/${img}"
                               onerror="this.src='{{ asset('storage/app/public/estate/not_found.png') }}'"
                               alt="gallery">`;
             });
