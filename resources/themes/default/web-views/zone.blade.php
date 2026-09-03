@@ -4,6 +4,8 @@
 @php
  $r2Base = rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/');
 @endphp
+@push('css_or_js')
+<style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
     :root{
@@ -486,7 +488,7 @@ onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
 
 
 
-@if($web_config['popup_banner'])
+@if(isset($web_config['popup_banner']) && $web_config['popup_banner'])
 <style>
 .popup-modal-content {
     border: none !important;
@@ -661,7 +663,7 @@ onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
                 </div>
 
                 {{-- زر جوجل بلاي --}}
-                <a href="{{ $web_config['android']['link'] }}"
+                <a href="{{ $web_config['android']['link'] ?? '#' }}"
                    class="popup-store-btn popup-btn-google">
                     <div class="popup-store-icon">
                         <i class="fab fa-google-play"></i>
@@ -676,7 +678,7 @@ onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
                 </a>
 
                 {{-- زر آب ستور --}}
-                <a href="{{ $web_config['ios']['link'] }}"
+                <a href="{{ $web_config['ios']['link'] ?? '#' }}"
                    class="popup-store-btn popup-btn-apple">
                     <div class="popup-store-icon">
                         <i class="fab fa-apple"></i>
@@ -710,7 +712,7 @@ onerror="this.src='{{ asset('storage/app/public/zone/default-zone.jpg') }}'">
     }
 
     $(document).ready(function () {
-        @if($web_config['popup_banner'])
+        @if(isset($web_config['popup_banner']) && $web_config['popup_banner'])
             $('#popup-modal').modal('show');
         @endif
     });
