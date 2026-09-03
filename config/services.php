@@ -59,4 +59,18 @@ return [
         'app_store_url' => env('IOS_APP_STORE_URL', ''),
     ],
 
+    // ChottuLink (بديل Firebase Dynamic Links) — يُنشئ رابط الإحالة القصير
+    // لكل مزوّد على نطاق abaadapp.chottu.link ويحمل الكود عبر التثبيت
+    // (deferred deep link). انظر App\Services\ChottuLinkService +
+    // ReferralController::myLink. نفس نمط moyasar: القيم الأساسية من
+    // business_settings، وهذه مجرد احتياط .env:
+    //   - chottulink_api_key         : مفتاح REST (c_api_…) لإنشاء الروابط — خادمي فقط
+    //   - chottulink_mobile_sdk_key  : مفتاح SDK للجوال (c_app_…) — يُرسَل لتطبيق الجوال عبر /api/v1/config
+    //   - chottulink_domain          : النطاق (abaadapp.chottu.link)
+    'chottulink' => [
+        'api_key' => env('CHOTTULINK_API_KEY', ''),
+        'domain' => env('CHOTTULINK_DOMAIN', 'abaadapp.chottu.link'),
+        'base_url' => env('CHOTTULINK_BASE_URL', 'https://api2.chottulink.com'),
+    ],
+
 ];

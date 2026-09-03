@@ -27,6 +27,7 @@ class User extends Authenticatable
         'ref_code',
         'referral_code',
         'referred_by_id',
+        'referral_short_link',
         'is_active',
         'zone_id',
         'user_type',

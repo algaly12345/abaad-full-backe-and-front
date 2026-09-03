@@ -218,6 +218,12 @@ Route::group(['namespace' => 'api\v1', 'prefix' => 'v1'], function () {
         Route::get('withdrawals', [ReferralController::class, 'withdrawals']);
     });
 
+    // حلّ slug رابط ChottuLink القصير (abaadapp.chottu.link/{slug}) إلى كود
+    // الإحالة — عام بلا مصادقة: يستدعيه تطبيق الجوال احتياطًا عندما يفشل حلّ
+    // ChottuLink SDK (تهيئته لا تكتمل على شبكة بعض الأجهزة). لا يكشف بيانات
+    // حسّاسة — كود الإحالة عام أصلًا في الرابط.
+    Route::get('referrals/resolve/{slug}', [ReferralController::class, 'resolveShortLink']);
+
     /*
     |--------------------------------------------------------------------------
     | Referral Settings (إعدادات نظام مكافآت الإحالة) — عبر API

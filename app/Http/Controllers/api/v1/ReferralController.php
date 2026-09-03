@@ -11,6 +11,7 @@ use App\Models\Referral;
 use App\Models\ReferralSetting;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\ChottuLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -31,8 +32,24 @@ class ReferralController extends Controller
             $user->save();
         }
 
-        // نفس النطاق الذي يستمع له تطبيق الجوال في MyApp._handleReferralLink (main.dart).
-        $referralLink = "https://abaadapp.sa/ref/{$user->referral_code}";
+        // الرابط الخام (وجهة الـ deep link) — نفس ما يحلّله تطبيق الجوال في
+        // MyApp._handleReferralLink (main.dart)، ويظل يعمل عبر App Links /
+        // Play Install Referrer للروابط المنتشرة سابقًا.
+        $rawLink = "https://abaadapp.sa/ref/{$user->referral_code}";
+
+        // الرابط القصير من ChottuLink (نطاق go.abaadapp.sa) — يُنشأ مرة واحدة
+        // لكل مزوّد ويُخزَّن. يحمل الكود عبر التثبيت (deferred deep link) فيحلّ
+        // فقدان الكود على iOS/أندرويد. لو فشل الإنشاء نتراجع للرابط الخام دون
+        // أي خطأ، ونعيد المحاولة في الطلب التالي (يبقى العمود فارغًا).
+        if (empty($user->referral_short_link)) {
+            $shortLink = ChottuLinkService::createReferralLink($user);
+            if (!empty($shortLink)) {
+                $user->referral_short_link = $shortLink;
+                $user->save();
+            }
+        }
+
+        $referralLink = $user->referral_short_link ?: $rawLink;
 
         return response()->json([
             'referral_code' => $user->referral_code,
@@ -310,6 +327,28 @@ class ReferralController extends Controller
             ->get();
 
         return response()->json(['data' => $withdrawals], 200);
+    }
+
+    /**
+     * يحوّل slug رابط ChottuLink القصير (الجزء الأخير من
+     * abaadapp.chottu.link/{slug}) إلى كود الإحالة، بمطابقة
+     * users.referral_short_link. عام بلا مصادقة — احتياط لتطبيق الجوال حين
+     * يفشل حلّ ChottuLink SDK. لا يكشف شيئًا حسّاسًا: كود الإحالة موجود
+     * أصلًا داخل وجهة الرابط.
+     */
+    public function resolveShortLink(string $slug)
+    {
+        $slug = trim($slug);
+
+        $user = $slug !== ''
+            ? User::where('referral_short_link', 'like', '%/' . $slug)->first()
+            : null;
+
+        if (!$user || empty($user->referral_code)) {
+            return response()->json(['referral_code' => null], 404);
+        }
+
+        return response()->json(['referral_code' => $user->referral_code], 200);
     }
 
     /**

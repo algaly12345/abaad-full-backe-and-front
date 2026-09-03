@@ -122,6 +122,13 @@ public function configuration()
            'maintenance_mode' => $getDecoded('maintenance_mode') === true,
 
             'google_map_key' => $getRaw('map_api_key') ?: '',
+
+            // ChottuLink (بديل Firebase Dynamic Links) — مفتاح SDK للجوال
+            // والنطاق، يُخزّنهما تطبيق الجوال في SharedPreferences ويُهيّئ بهما
+            // الـ SDK. مفتاح REST لإنشاء الروابط لا يُرسَل هنا (خادمي فقط —
+            // ChottuLinkService). انظر جدول business_settings.
+            'chottulink_sdk_key' => $getRaw('chottulink_mobile_sdk_key') ?: '',
+            'chottulink_domain' => $getRaw('chottulink_domain') ?: '',
         ]);
     } catch (\Throwable $e) {
         return response()->json(['error' => 'Configuration temporarily unavailable', 'message' => $e->getMessage()], 200);
