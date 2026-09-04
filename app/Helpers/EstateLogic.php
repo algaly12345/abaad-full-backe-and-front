@@ -270,7 +270,16 @@ $agent = Agent::where('user_id', $item->user_id)->first();
                 "phoneNumber"=>$item->phoneNumber,
                 
                 "isValid"=>$item->isValid,
+
+
+                  "responsible_employee_name"=>$item->responsible_employee_name,
                 
+                "responsible_employee_phone_number"=>$item->responsible_employee_phone_number,
+                
+
+
+
+           
                 
                 
              
@@ -460,6 +469,15 @@ $agent = Agent::where('user_id', $item->user_id)->first();
   $data['isValid'] = $estate->isValid;
 
 
+
+
+
+
+
+        $data['responsible_employee_name'] = $estate->responsible_employee_name;
+        $data['responsible_employee_phone_number'] = $estate->responsible_employee_phone_number;
+
+    
       
     
           

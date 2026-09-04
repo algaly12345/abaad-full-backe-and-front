@@ -84,6 +84,11 @@ class Estate extends Model
            'phoneNumber'=>'string',
            
           'isValid'=>'string',
+
+
+            'responsible_employee_name'=>'string',
+           
+          'responsible_employee_phone_number'=>'string',
         
     ];
     
