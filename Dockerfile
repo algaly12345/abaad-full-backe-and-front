@@ -57,8 +57,8 @@ RUN mkdir -p \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache resources/lang \
+    && chmod -R 775 storage bootstrap/cache resources/lang
 
 # ── Config files ─────────────────────────────────────────────────
 COPY docker/nginx.conf      /etc/nginx/http.d/default.conf
