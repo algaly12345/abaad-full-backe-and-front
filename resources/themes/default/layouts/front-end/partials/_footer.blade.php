@@ -152,7 +152,7 @@
                                         </li>
 
                                         <li class="widget-list-item">
-                                            <a class="widget-list-link" href="{{route('track-order.index')}}">
+                                            <a class="widget-list-link" href="{{ Route::has('track-order.index') ? route('track-order.index') : '#' }}">
                                                 {{ translate('my properties')}}
                                             </a>
                                         </li>
