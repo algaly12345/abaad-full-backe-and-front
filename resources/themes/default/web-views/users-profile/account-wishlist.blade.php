@@ -60,12 +60,12 @@
 
 
                                             @php
-                                            $images = json_decode($order->estate->images, true); // Decode the JSON string to a PHP array
+                                            $images = json_decode($order->estate?->images, true); // Decode the JSON string to a PHP array
                                         @endphp
 
                                         @if (!empty($images) && isset($images[0]))
                                             <img class="border-lighter" alt="{{ translate('estate') }}"
-                                                 src="{{ asset('storage/app/public/estate/' . $images[0]) }}">
+                                                 src="{{ rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/') . '/estate/' . \$images[0] }}">
                                         @else
 
                                         <img alt="{{ translate('estate') }}"
@@ -198,12 +198,12 @@
 
 
                                             @php
-                                            $images = json_decode($order->estate->images, true); // Decode the JSON string to a PHP array
+                                            $images = json_decode($order->estate?->images, true); // Decode the JSON string to a PHP array
                                         @endphp
 
                                         @if (!empty($images) && isset($images[0]))
                                             <img class="border-lighter" alt="{{ translate('shop') }}"
-                                                 src="{{ asset('storage/app/public/estate/' . $images[0]) }}">
+                                                 src="{{ rtrim(\App\Helpers\Helpers::get_business_settings('r2_public_url') ?: 'https://pub-4ce088f208944decb4e9cf11054558ea.r2.dev', '/') . '/estate/' . \$images[0] }}">
                                         @else
 
                                         <img class="border-lighter" alt="{{ translate('shop') }}"
